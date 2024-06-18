@@ -1,0 +1,197 @@
+[0.000000] (-) TimerEvent: {}
+[0.000981] (cassie_exp) JobQueued: {'identifier': 'cassie_exp', 'dependencies': OrderedDict()}
+[0.001039] (cassie_exp) JobStarted: {'identifier': 'cassie_exp'}
+[0.101995] (-) TimerEvent: {}
+[0.203810] (-) TimerEvent: {}
+[0.306613] (-) TimerEvent: {}
+[0.408017] (-) TimerEvent: {}
+[0.410072] (cassie_exp) JobProgress: {'identifier': 'cassie_exp', 'progress': 'cmake'}
+[0.410914] (cassie_exp) JobProgress: {'identifier': 'cassie_exp', 'progress': 'build'}
+[0.412070] (cassie_exp) Command: {'cmd': ['/home/jkang/cmake-install/bin/cmake', '--build', '/home/jkang/vo_ws/Decentralized_EKF_MHE/build/cassie_exp', '--', '-j12', '-l12'], 'cwd': '/home/jkang/vo_ws/Decentralized_EKF_MHE/build/cassie_exp', 'env': OrderedDict([('LESSOPEN', '| /usr/bin/lesspipe %s'), ('USER', 'jkang'), ('SSH_AGENT_PID', '2069'), ('XDG_SESSION_TYPE', 'x11'), ('SHLVL', '1'), ('LD_LIBRARY_PATH', '/home/jkang/vo_ws/mhe_vio/install/orbslam3_msgs/lib:/home/jkang/vo_ws/mhe_vio/install/optitrack_broadcast/lib:/home/jkang/vo_ws/mhe_vio/install/custom_msgs/lib:/home/jkang/vo_ws/mhe_vio/install/communication/lib:/opt/ros/galactic/opt/yaml_cpp_vendor/lib:/opt/ros/galactic/opt/rviz_ogre_vendor/lib:/opt/ros/galactic/lib/x86_64-linux-gnu:/opt/ros/galactic/lib'), ('HOME', '/home/jkang'), ('OLDPWD', '/home/jkang/vo_ws'), ('DESKTOP_SESSION', 'ubuntu'), ('ROS_PYTHON_VERSION', '3'), ('GNOME_SHELL_SESSION_MODE', 'ubuntu'), ('GTK_MODULES', 'gail:atk-bridge'), ('MANAGERPID', '1847'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1000/bus'), ('COLORTERM', 'truecolor'), ('IM_CONFIG_PHASE', '1'), ('COLCON_PREFIX_PATH', '/home/jkang/vo_ws/Decentralized_EKF_MHE/install:/home/jkang/vo_ws/mhe_vio/install'), ('ROS_DISTRO', 'galactic'), ('LOGNAME', 'jkang'), ('JOURNAL_STREAM', '8:55592'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('XDG_SESSION_CLASS', 'user'), ('USERNAME', 'jkang'), ('TERM', 'xterm-256color'), ('GNOME_DESKTOP_SESSION_ID', 'this-is-deprecated'), ('ROS_LOCALHOST_ONLY', '0'), ('WINDOWPATH', '2'), ('PATH', '/opt/ros/galactic/bin:/home/jkang/cmake-install/bin:/home/jkang/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin'), ('SESSION_MANAGER', 'local/jkang-Legion-Y7000P-2019:@/tmp/.ICE-unix/2107,unix/jkang-Legion-Y7000P-2019:/tmp/.ICE-unix/2107'), ('INVOCATION_ID', '5ca42d6ff5e44dc3a35bc0c4f1bc032d'), ('XDG_MENU_PREFIX', 'gnome-'), ('GNOME_TERMINAL_SCREEN', '/org/gnome/Terminal/screen/7893eeef_06d7_461a_addf_309b7709547a'), ('XDG_RUNTIME_DIR', '/run/user/1000'), ('DISPLAY', ':1'), ('LANG', 'en_US.UTF-8'), ('XDG_CURRENT_DESKTOP', 'ubuntu:GNOME'), ('XMODIFIERS', '@im=ibus'), ('XDG_SESSION_DESKTOP', 'ubuntu'), ('XAUTHORITY', '/run/user/1000/gdm/Xauthority'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('GNOME_TERMINAL_SERVICE', ':1.630'), ('SSH_AUTH_SOCK', '/run/user/1000/keyring/ssh'), ('AMENT_PREFIX_PATH', '/home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp:/home/jkang/vo_ws/mhe_vio/install/cassie_exp:/home/jkang/vo_ws/mhe_vio/install/mhe_pogox_exp:/home/jkang/vo_ws/mhe_vio/install/mhe_go1:/home/jkang/vo_ws/mhe_vio/install/ekf_go1:/home/jkang/vo_ws/mhe_vio/install/orbslam3_msgs:/home/jkang/vo_ws/mhe_vio/install/ngimu_tf:/home/jkang/vo_ws/mhe_vio/install/optitrack_broadcast:/home/jkang/vo_ws/mhe_vio/install/mhe_cassie:/home/jkang/vo_ws/mhe_vio/install/image_read_c:/home/jkang/vo_ws/mhe_vio/install/image_read:/home/jkang/vo_ws/mhe_vio/install/custom_msgs:/home/jkang/vo_ws/mhe_vio/install/communication:/opt/ros/galactic'), ('SHELL', '/bin/bash'), ('QT_ACCESSIBILITY', '1'), ('GDMSESSION', 'ubuntu'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('GPG_AGENT_INFO', '/run/user/1000/gnupg/S.gpg-agent:0:1'), ('QT_IM_MODULE', 'ibus'), ('PWD', '/home/jkang/vo_ws/Decentralized_EKF_MHE/build/cassie_exp'), ('LC_ALL', 'en_US.UTF-8'), ('XDG_CONFIG_DIRS', '/etc/xdg/xdg-ubuntu:/etc/xdg'), ('XDG_DATA_DIRS', '/usr/share/ubuntu:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop'), ('PYTHONPATH', '/home/jkang/vo_ws/mhe_vio/install/orbslam3_msgs/lib/python3.8/site-packages:/home/jkang/vo_ws/mhe_vio/install/optitrack_broadcast/lib/python3.8/site-packages:/home/jkang/vo_ws/mhe_vio/install/image_read/lib/python3.8/site-packages:/home/jkang/vo_ws/mhe_vio/install/custom_msgs/lib/python3.8/site-packages:/home/jkang/vo_ws/mhe_vio/install/communication/lib/python3.8/site-packages:/opt/ros/galactic/lib/python3.8/site-packages'), ('COLCON', '1'), ('VTE_VERSION', '6003'), ('CMAKE_PREFIX_PATH', '/home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp:/home/jkang/vo_ws/mhe_vio/install/cassie_exp:/home/jkang/vo_ws/mhe_vio/install/mhe_pogox_exp:/home/jkang/vo_ws/mhe_vio/install/mhe_go1:/home/jkang/vo_ws/mhe_vio/install/ekf_go1:/home/jkang/vo_ws/mhe_vio/install/orbslam3_msgs:/home/jkang/vo_ws/mhe_vio/install/ngimu_tf:/home/jkang/vo_ws/mhe_vio/install/optitrack_broadcast:/home/jkang/vo_ws/mhe_vio/install/mhe_cassie:/home/jkang/vo_ws/mhe_vio/install/image_read_c:/home/jkang/vo_ws/mhe_vio/install/custom_msgs:/home/jkang/vo_ws/mhe_vio/install/communication:/home/jkang/cmake-install::/home/jkang/vo_ws/mhe_vio/install/image_read:/opt/ros/galactic')]), 'shell': False}
+[0.457964] (cassie_exp) StdoutLine: {'line': b'[ 25%] Built target MheSrb\n'}
+[0.477191] (cassie_exp) StdoutLine: {'line': b'[ 50%] Built target DecentralEst\n'}
+[0.507980] (-) TimerEvent: {}
+[0.522433] (cassie_exp) StdoutLine: {'line': b'[ 62%] \x1b[32mBuilding CXX object CMakeFiles/EstSub.dir/src/EstSub.cpp.o\x1b[0m\n'}
+[0.608256] (-) TimerEvent: {}
+[0.708593] (-) TimerEvent: {}
+[0.808919] (-) TimerEvent: {}
+[0.909243] (-) TimerEvent: {}
+[1.009582] (-) TimerEvent: {}
+[1.110015] (-) TimerEvent: {}
+[1.210411] (-) TimerEvent: {}
+[1.310745] (-) TimerEvent: {}
+[1.411082] (-) TimerEvent: {}
+[1.511417] (-) TimerEvent: {}
+[1.611735] (-) TimerEvent: {}
+[1.712062] (-) TimerEvent: {}
+[1.812392] (-) TimerEvent: {}
+[1.912713] (-) TimerEvent: {}
+[2.013010] (-) TimerEvent: {}
+[2.113387] (-) TimerEvent: {}
+[2.213715] (-) TimerEvent: {}
+[2.314100] (-) TimerEvent: {}
+[2.414423] (-) TimerEvent: {}
+[2.514781] (-) TimerEvent: {}
+[2.615161] (-) TimerEvent: {}
+[2.715501] (-) TimerEvent: {}
+[2.815829] (-) TimerEvent: {}
+[2.916162] (-) TimerEvent: {}
+[3.016497] (-) TimerEvent: {}
+[3.116831] (-) TimerEvent: {}
+[3.217161] (-) TimerEvent: {}
+[3.317494] (-) TimerEvent: {}
+[3.417836] (-) TimerEvent: {}
+[3.518155] (-) TimerEvent: {}
+[3.618481] (-) TimerEvent: {}
+[3.718808] (-) TimerEvent: {}
+[3.819147] (-) TimerEvent: {}
+[3.919476] (-) TimerEvent: {}
+[4.019829] (-) TimerEvent: {}
+[4.120162] (-) TimerEvent: {}
+[4.220491] (-) TimerEvent: {}
+[4.320837] (-) TimerEvent: {}
+[4.421168] (-) TimerEvent: {}
+[4.521515] (-) TimerEvent: {}
+[4.621831] (-) TimerEvent: {}
+[4.722139] (-) TimerEvent: {}
+[4.822465] (-) TimerEvent: {}
+[4.922789] (-) TimerEvent: {}
+[5.023111] (-) TimerEvent: {}
+[5.123446] (-) TimerEvent: {}
+[5.223777] (-) TimerEvent: {}
+[5.324102] (-) TimerEvent: {}
+[5.424443] (-) TimerEvent: {}
+[5.524774] (-) TimerEvent: {}
+[5.625109] (-) TimerEvent: {}
+[5.725436] (-) TimerEvent: {}
+[5.825764] (-) TimerEvent: {}
+[5.926092] (-) TimerEvent: {}
+[6.026423] (-) TimerEvent: {}
+[6.126753] (-) TimerEvent: {}
+[6.227085] (-) TimerEvent: {}
+[6.327412] (-) TimerEvent: {}
+[6.427743] (-) TimerEvent: {}
+[6.528079] (-) TimerEvent: {}
+[6.628409] (-) TimerEvent: {}
+[6.728741] (-) TimerEvent: {}
+[6.829075] (-) TimerEvent: {}
+[6.929404] (-) TimerEvent: {}
+[7.029753] (-) TimerEvent: {}
+[7.130077] (-) TimerEvent: {}
+[7.230405] (-) TimerEvent: {}
+[7.330732] (-) TimerEvent: {}
+[7.431067] (-) TimerEvent: {}
+[7.531412] (-) TimerEvent: {}
+[7.631747] (-) TimerEvent: {}
+[7.732077] (-) TimerEvent: {}
+[7.832399] (-) TimerEvent: {}
+[7.932728] (-) TimerEvent: {}
+[8.033064] (-) TimerEvent: {}
+[8.133398] (-) TimerEvent: {}
+[8.233735] (-) TimerEvent: {}
+[8.334064] (-) TimerEvent: {}
+[8.434392] (-) TimerEvent: {}
+[8.534720] (-) TimerEvent: {}
+[8.635053] (-) TimerEvent: {}
+[8.735380] (-) TimerEvent: {}
+[8.835706] (-) TimerEvent: {}
+[8.936037] (-) TimerEvent: {}
+[9.036367] (-) TimerEvent: {}
+[9.136692] (-) TimerEvent: {}
+[9.237024] (-) TimerEvent: {}
+[9.337353] (-) TimerEvent: {}
+[9.437670] (-) TimerEvent: {}
+[9.537996] (-) TimerEvent: {}
+[9.638318] (-) TimerEvent: {}
+[9.738660] (-) TimerEvent: {}
+[9.839027] (-) TimerEvent: {}
+[9.939350] (-) TimerEvent: {}
+[10.039670] (-) TimerEvent: {}
+[10.139980] (-) TimerEvent: {}
+[10.240296] (-) TimerEvent: {}
+[10.340611] (-) TimerEvent: {}
+[10.440931] (-) TimerEvent: {}
+[10.541235] (-) TimerEvent: {}
+[10.641505] (-) TimerEvent: {}
+[10.749023] (-) TimerEvent: {}
+[10.849340] (-) TimerEvent: {}
+[10.949661] (-) TimerEvent: {}
+[11.049954] (-) TimerEvent: {}
+[11.150274] (-) TimerEvent: {}
+[11.250612] (-) TimerEvent: {}
+[11.350960] (-) TimerEvent: {}
+[11.451301] (-) TimerEvent: {}
+[11.551662] (-) TimerEvent: {}
+[11.652015] (-) TimerEvent: {}
+[11.752344] (-) TimerEvent: {}
+[11.852669] (-) TimerEvent: {}
+[11.952997] (-) TimerEvent: {}
+[12.053318] (-) TimerEvent: {}
+[12.153643] (-) TimerEvent: {}
+[12.253935] (-) TimerEvent: {}
+[12.354256] (-) TimerEvent: {}
+[12.454573] (-) TimerEvent: {}
+[12.554889] (-) TimerEvent: {}
+[12.655211] (-) TimerEvent: {}
+[12.755533] (-) TimerEvent: {}
+[12.855850] (-) TimerEvent: {}
+[12.956176] (-) TimerEvent: {}
+[13.056502] (-) TimerEvent: {}
+[13.156824] (-) TimerEvent: {}
+[13.257139] (-) TimerEvent: {}
+[13.357456] (-) TimerEvent: {}
+[13.457780] (-) TimerEvent: {}
+[13.558095] (-) TimerEvent: {}
+[13.658416] (-) TimerEvent: {}
+[13.758730] (-) TimerEvent: {}
+[13.859043] (-) TimerEvent: {}
+[13.959365] (-) TimerEvent: {}
+[14.059699] (-) TimerEvent: {}
+[14.160016] (-) TimerEvent: {}
+[14.260335] (-) TimerEvent: {}
+[14.360674] (-) TimerEvent: {}
+[14.461026] (-) TimerEvent: {}
+[14.561345] (-) TimerEvent: {}
+[14.568674] (cassie_exp) StdoutLine: {'line': b'[ 75%] \x1b[32m\x1b[1mLinking CXX static library libEstSub.a\x1b[0m\n'}
+[14.590683] (cassie_exp) StdoutLine: {'line': b'[ 75%] Built target EstSub\n'}
+[14.617001] (cassie_exp) StdoutLine: {'line': b'[ 87%] \x1b[32m\x1b[1mLinking CXX executable sub\x1b[0m\n'}
+[14.661483] (-) TimerEvent: {}
+[14.761844] (-) TimerEvent: {}
+[14.772491] (cassie_exp) StdoutLine: {'line': b'[100%] Built target sub\n'}
+[14.787140] (cassie_exp) CommandEnded: {'returncode': 0}
+[14.862177] (-) TimerEvent: {}
+[14.869589] (cassie_exp) JobProgress: {'identifier': 'cassie_exp', 'progress': 'install'}
+[14.886621] (cassie_exp) Command: {'cmd': ['/home/jkang/cmake-install/bin/cmake', '--install', '/home/jkang/vo_ws/Decentralized_EKF_MHE/build/cassie_exp'], 'cwd': '/home/jkang/vo_ws/Decentralized_EKF_MHE/build/cassie_exp', 'env': OrderedDict([('LESSOPEN', '| /usr/bin/lesspipe %s'), ('USER', 'jkang'), ('SSH_AGENT_PID', '2069'), ('XDG_SESSION_TYPE', 'x11'), ('SHLVL', '1'), ('LD_LIBRARY_PATH', '/home/jkang/vo_ws/mhe_vio/install/orbslam3_msgs/lib:/home/jkang/vo_ws/mhe_vio/install/optitrack_broadcast/lib:/home/jkang/vo_ws/mhe_vio/install/custom_msgs/lib:/home/jkang/vo_ws/mhe_vio/install/communication/lib:/opt/ros/galactic/opt/yaml_cpp_vendor/lib:/opt/ros/galactic/opt/rviz_ogre_vendor/lib:/opt/ros/galactic/lib/x86_64-linux-gnu:/opt/ros/galactic/lib'), ('HOME', '/home/jkang'), ('OLDPWD', '/home/jkang/vo_ws'), ('DESKTOP_SESSION', 'ubuntu'), ('ROS_PYTHON_VERSION', '3'), ('GNOME_SHELL_SESSION_MODE', 'ubuntu'), ('GTK_MODULES', 'gail:atk-bridge'), ('MANAGERPID', '1847'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1000/bus'), ('COLORTERM', 'truecolor'), ('IM_CONFIG_PHASE', '1'), ('COLCON_PREFIX_PATH', '/home/jkang/vo_ws/Decentralized_EKF_MHE/install:/home/jkang/vo_ws/mhe_vio/install'), ('ROS_DISTRO', 'galactic'), ('LOGNAME', 'jkang'), ('JOURNAL_STREAM', '8:55592'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '2'), ('XDG_SESSION_CLASS', 'user'), ('USERNAME', 'jkang'), ('TERM', 'xterm-256color'), ('GNOME_DESKTOP_SESSION_ID', 'this-is-deprecated'), ('ROS_LOCALHOST_ONLY', '0'), ('WINDOWPATH', '2'), ('PATH', '/opt/ros/galactic/bin:/home/jkang/cmake-install/bin:/home/jkang/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin'), ('SESSION_MANAGER', 'local/jkang-Legion-Y7000P-2019:@/tmp/.ICE-unix/2107,unix/jkang-Legion-Y7000P-2019:/tmp/.ICE-unix/2107'), ('INVOCATION_ID', '5ca42d6ff5e44dc3a35bc0c4f1bc032d'), ('XDG_MENU_PREFIX', 'gnome-'), ('GNOME_TERMINAL_SCREEN', '/org/gnome/Terminal/screen/7893eeef_06d7_461a_addf_309b7709547a'), ('XDG_RUNTIME_DIR', '/run/user/1000'), ('DISPLAY', ':1'), ('LANG', 'en_US.UTF-8'), ('XDG_CURRENT_DESKTOP', 'ubuntu:GNOME'), ('XMODIFIERS', '@im=ibus'), ('XDG_SESSION_DESKTOP', 'ubuntu'), ('XAUTHORITY', '/run/user/1000/gdm/Xauthority'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('GNOME_TERMINAL_SERVICE', ':1.630'), ('SSH_AUTH_SOCK', '/run/user/1000/keyring/ssh'), ('AMENT_PREFIX_PATH', '/home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp:/home/jkang/vo_ws/mhe_vio/install/cassie_exp:/home/jkang/vo_ws/mhe_vio/install/mhe_pogox_exp:/home/jkang/vo_ws/mhe_vio/install/mhe_go1:/home/jkang/vo_ws/mhe_vio/install/ekf_go1:/home/jkang/vo_ws/mhe_vio/install/orbslam3_msgs:/home/jkang/vo_ws/mhe_vio/install/ngimu_tf:/home/jkang/vo_ws/mhe_vio/install/optitrack_broadcast:/home/jkang/vo_ws/mhe_vio/install/mhe_cassie:/home/jkang/vo_ws/mhe_vio/install/image_read_c:/home/jkang/vo_ws/mhe_vio/install/image_read:/home/jkang/vo_ws/mhe_vio/install/custom_msgs:/home/jkang/vo_ws/mhe_vio/install/communication:/opt/ros/galactic'), ('SHELL', '/bin/bash'), ('QT_ACCESSIBILITY', '1'), ('GDMSESSION', 'ubuntu'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('GPG_AGENT_INFO', '/run/user/1000/gnupg/S.gpg-agent:0:1'), ('QT_IM_MODULE', 'ibus'), ('PWD', '/home/jkang/vo_ws/Decentralized_EKF_MHE/build/cassie_exp'), ('LC_ALL', 'en_US.UTF-8'), ('XDG_CONFIG_DIRS', '/etc/xdg/xdg-ubuntu:/etc/xdg'), ('XDG_DATA_DIRS', '/usr/share/ubuntu:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop'), ('PYTHONPATH', '/home/jkang/vo_ws/mhe_vio/install/orbslam3_msgs/lib/python3.8/site-packages:/home/jkang/vo_ws/mhe_vio/install/optitrack_broadcast/lib/python3.8/site-packages:/home/jkang/vo_ws/mhe_vio/install/image_read/lib/python3.8/site-packages:/home/jkang/vo_ws/mhe_vio/install/custom_msgs/lib/python3.8/site-packages:/home/jkang/vo_ws/mhe_vio/install/communication/lib/python3.8/site-packages:/opt/ros/galactic/lib/python3.8/site-packages'), ('COLCON', '1'), ('VTE_VERSION', '6003'), ('CMAKE_PREFIX_PATH', '/home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp:/home/jkang/vo_ws/mhe_vio/install/cassie_exp:/home/jkang/vo_ws/mhe_vio/install/mhe_pogox_exp:/home/jkang/vo_ws/mhe_vio/install/mhe_go1:/home/jkang/vo_ws/mhe_vio/install/ekf_go1:/home/jkang/vo_ws/mhe_vio/install/orbslam3_msgs:/home/jkang/vo_ws/mhe_vio/install/ngimu_tf:/home/jkang/vo_ws/mhe_vio/install/optitrack_broadcast:/home/jkang/vo_ws/mhe_vio/install/mhe_cassie:/home/jkang/vo_ws/mhe_vio/install/image_read_c:/home/jkang/vo_ws/mhe_vio/install/custom_msgs:/home/jkang/vo_ws/mhe_vio/install/communication:/home/jkang/cmake-install::/home/jkang/vo_ws/mhe_vio/install/image_read:/opt/ros/galactic')]), 'shell': False}
+[14.901388] (cassie_exp) StdoutLine: {'line': b'-- Install configuration: "Release"\n'}
+[14.902417] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/include\n'}
+[14.902906] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/include/DecentralEst.hpp\n'}
+[14.903263] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/include/data_logger.hpp\n'}
+[14.903596] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/include/MheSrb.hpp\n'}
+[14.903930] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/include/EigenUtils.hpp\n'}
+[14.904258] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/include/EstSub.hpp\n'}
+[14.904582] (cassie_exp) StdoutLine: {'line': b'-- Installing: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/lib/cassie_exp/sub\n'}
+[14.905791] (cassie_exp) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/lib/cassie_exp/sub" to ""\n'}
+[14.906280] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/ament_index/resource_index/package_run_dependencies/cassie_exp\n'}
+[14.906907] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/ament_index/resource_index/parent_prefix_path/cassie_exp\n'}
+[14.907512] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/environment/ament_prefix_path.sh\n'}
+[14.907958] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/environment/ament_prefix_path.dsv\n'}
+[14.908222] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/environment/path.sh\n'}
+[14.908421] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/environment/path.dsv\n'}
+[14.908724] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/local_setup.bash\n'}
+[14.909023] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/local_setup.sh\n'}
+[14.909264] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/local_setup.zsh\n'}
+[14.909429] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/local_setup.dsv\n'}
+[14.909583] (cassie_exp) StdoutLine: {'line': b'-- Installing: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/package.dsv\n'}
+[14.909784] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/ament_index/resource_index/packages/cassie_exp\n'}
+[14.909950] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/cmake/cassie_expConfig.cmake\n'}
+[14.910100] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/cmake/cassie_expConfig-version.cmake\n'}
+[14.910247] (cassie_exp) StdoutLine: {'line': b'-- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/package.xml\n'}
+[14.912772] (cassie_exp) CommandEnded: {'returncode': 0}
+[14.963868] (-) TimerEvent: {}
+[15.064944] (-) TimerEvent: {}
+[15.165577] (-) TimerEvent: {}
+[15.268520] (-) TimerEvent: {}
+[15.369123] (-) TimerEvent: {}
+[15.470233] (-) TimerEvent: {}
+[15.561088] (cassie_exp) JobEnded: {'identifier': 'cassie_exp', 'rc': 0}
+[15.562676] (-) EventReactorShutdown: {}

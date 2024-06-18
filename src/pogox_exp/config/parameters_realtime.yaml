@@ -1,0 +1,52 @@
+pogox_Sub:
+  ros__parameters:
+
+    log_name: "mocap_exp_test"
+    # process_noise
+    # C_p C_accel used for process noise
+    p_process_std: [0.001, 0.001, 0.001]
+    accel_input_std: [1.5, 1.5, 1.5] 
+    accel_input_impact_std: [150.5, 150.5, 150.5] # C_p C_accel used for KF
+    accel_input_contact_std: [5.5, 5.5, 5.5] # C_p C_accel used for KF
+
+    accel_bias_process_std: [0.1, 0.1, 0.1]
+
+    vo_pose_std: [0.001, 0.001, 0.001] # m
+
+    # init_noise
+    p_init_std: [0.001, 0.001, 0.001]
+    v_init_std: [0.001, 0.001, 0.001]
+    foot_init_std: 0.00025
+    accel_bias_init_std: 0.01
+
+    # measurement_noise
+    lidar_std: [0.03, 0.03, 0.10] # rad, what metric here means? J and forward is rad based.
+    lidar_z_std: 0.001
+
+    # contact_noise
+    foothold_slide_std: [0.001, 0.001, 0.001]
+    foot_swing_std: 100000000.0   
+
+    visualize: 1
+
+
+    # mhe_params
+    rate: 200
+    interval: 5 
+    N: 10
+    est_type: 0
+    
+    #osqp solver params
+    rho: 0.1
+    alpha: 1.6
+    primTol: 1e-6
+    dualTol: 1e-6
+    delta: 0.00001
+    sigma: 0.00001
+    verbose: false
+    adaptRho: true
+    polish: false
+    maxQPIter: 2000
+    realtiveTol: 1e-6
+    absTol: 1e-6
+    timeLimit: 0.0028

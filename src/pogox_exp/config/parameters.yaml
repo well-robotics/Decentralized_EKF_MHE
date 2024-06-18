@@ -1,0 +1,37 @@
+anymal_read:
+  ros__parameters:
+    # process_noise
+    accel_input_std: [0.35, 0.35, 0.55]
+    p_process_std: [0.1, 0.1, 0.05]
+    v_process_std: [0.9, 0.9, 0.5]
+    accel_bias_process_std: [0.001, 0.001, 0.001]
+    foothold_slide_std: [0.0015,0.0015,0.0015]
+    foot_swing_std: 10000.0  
+
+    # measurement_noise
+    encoder_std: [0.001, 0.001, 0.001] # rad, what metric here means? J and forward is rad based.
+    kinematics_std: [0.001, 0.001, 0.001] # not sure
+
+    # init_noise
+    p_init_std: 0.01
+    v_init_std: 0.01
+    foot_init_std: 0.025
+    accel_bias_init_std: 0.001
+
+    # mhe_params
+    rate: 400
+    interval: 2.5 
+    N: 50
+    est_type: 1
+    
+    #osqp solver params
+    rho: 0.1
+    alpha: 1.6
+    primTol: 0.00000001
+    dualTol: 0.00000001
+    delta: 0.00001
+    sigma: 0.00001
+    verbose: true
+    adaptRho: true
+    polish: false
+    maxQPIter: 2000

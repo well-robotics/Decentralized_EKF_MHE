@@ -1,0 +1,40 @@
+est_sub:
+  ros__parameters:
+
+    data_path: "/home/jkang/vo_ws/Decentralized_EKF_MHE/src/cassie_exp/data"
+    log_name: "cassie"
+    # process_noise
+    p_process_std: [0.001, 0.001, 0.001]
+    accel_bias_process_std: [0.0001, 0.0001, 0.0001]
+    accel_input_std: [0.1, 0.1, 0.1] 
+
+    # init_noise
+    p_init_std: [1.0, 1.0, 1.0]
+    v_init_std: [1.0, 1.0, 1.0]
+    foot_init_std: 0.001
+    accel_bias_init_std: 0.0001
+
+    # contact_noise
+    foot_slide_std: [0.01, 0.01, 0.01]
+    foot_swing_std: 10000000.0   
+
+    # estimation_params
+    rate: 200 
+    interval: 1 
+    N: 20
+    est_type: 0
+    
+    # OSQP solver params
+    rho: 0.1
+    alpha: 1.6
+    primTol: 1e-6
+    dualTol: 1e-6
+    delta: 0.00001
+    sigma: 0.00001
+    verbose: false
+    adaptRho: true
+    polish: false
+    maxQPIter: 4000
+    realtiveTol: 1e-6
+    absTol: 1e-6
+    timeLimit: 0.0028

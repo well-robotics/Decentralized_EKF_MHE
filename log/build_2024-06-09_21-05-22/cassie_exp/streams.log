@@ -1,0 +1,35 @@
+[0.487s] Invoking command in '/home/jkang/vo_ws/Decentralized_EKF_MHE/build/cassie_exp': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/jkang/vo_ws/mhe_vio/install/image_read:/opt/ros/galactic /home/jkang/cmake-install/bin/cmake --build /home/jkang/vo_ws/Decentralized_EKF_MHE/build/cassie_exp -- -j12 -l12
+[0.545s] [ 25%] Built target MheSrb
+[0.567s] [ 50%] Built target DecentralEst
+[0.609s] [ 62%] [32mBuilding CXX object CMakeFiles/EstSub.dir/src/EstSub.cpp.o[0m
+[14.690s] [ 75%] [32m[1mLinking CXX static library libEstSub.a[0m
+[14.715s] [ 75%] Built target EstSub
+[14.753s] [ 87%] [32m[1mLinking CXX executable sub[0m
+[14.934s] [100%] Built target sub
+[14.942s] Invoked command in '/home/jkang/vo_ws/Decentralized_EKF_MHE/build/cassie_exp' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/jkang/vo_ws/mhe_vio/install/image_read:/opt/ros/galactic /home/jkang/cmake-install/bin/cmake --build /home/jkang/vo_ws/Decentralized_EKF_MHE/build/cassie_exp -- -j12 -l12
+[14.995s] Invoking command in '/home/jkang/vo_ws/Decentralized_EKF_MHE/build/cassie_exp': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/jkang/vo_ws/mhe_vio/install/image_read:/opt/ros/galactic /home/jkang/cmake-install/bin/cmake --install /home/jkang/vo_ws/Decentralized_EKF_MHE/build/cassie_exp
+[14.999s] -- Install configuration: "Release"
+[15.000s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/include
+[15.000s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/include/DecentralEst.hpp
+[15.000s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/include/data_logger.hpp
+[15.000s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/include/MheSrb.hpp
+[15.000s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/include/EigenUtils.hpp
+[15.000s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/include/EstSub.hpp
+[15.001s] -- Installing: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/lib/cassie_exp/sub
+[15.003s] -- Set non-toolchain portion of runtime path of "/home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/lib/cassie_exp/sub" to ""
+[15.004s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/ament_index/resource_index/package_run_dependencies/cassie_exp
+[15.004s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/ament_index/resource_index/parent_prefix_path/cassie_exp
+[15.004s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/environment/ament_prefix_path.sh
+[15.004s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/environment/ament_prefix_path.dsv
+[15.004s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/environment/path.sh
+[15.004s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/environment/path.dsv
+[15.004s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/local_setup.bash
+[15.004s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/local_setup.sh
+[15.005s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/local_setup.zsh
+[15.005s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/local_setup.dsv
+[15.005s] -- Installing: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/package.dsv
+[15.005s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/ament_index/resource_index/packages/cassie_exp
+[15.005s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/cmake/cassie_expConfig.cmake
+[15.005s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/cmake/cassie_expConfig-version.cmake
+[15.005s] -- Up-to-date: /home/jkang/vo_ws/Decentralized_EKF_MHE/install/cassie_exp/share/cassie_exp/package.xml
+[15.007s] Invoked command in '/home/jkang/vo_ws/Decentralized_EKF_MHE/build/cassie_exp' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/jkang/vo_ws/mhe_vio/install/image_read:/opt/ros/galactic /home/jkang/cmake-install/bin/cmake --install /home/jkang/vo_ws/Decentralized_EKF_MHE/build/cassie_exp

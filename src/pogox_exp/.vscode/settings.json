@@ -1,0 +1,14 @@
+{
+    "python.autoComplete.extraPaths": [
+        "/home/jkang/vo_ws/mhe_vio/install/orbslam3_msgs/lib/python3.8/site-packages",
+        "/home/jkang/vo_ws/mhe_vio/install/optitrack_broadcast/lib/python3.8/site-packages",
+        "/home/jkang/vo_ws/mhe_vio/install/communication/lib/python3.8/site-packages",
+        "/opt/ros/galactic/lib/python3.8/site-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/home/jkang/vo_ws/mhe_vio/install/orbslam3_msgs/lib/python3.8/site-packages",
+        "/home/jkang/vo_ws/mhe_vio/install/optitrack_broadcast/lib/python3.8/site-packages",
+        "/home/jkang/vo_ws/mhe_vio/install/communication/lib/python3.8/site-packages",
+        "/opt/ros/galactic/lib/python3.8/site-packages"
+    ]
+}

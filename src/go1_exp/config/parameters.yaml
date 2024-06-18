@@ -1,0 +1,61 @@
+est_sub:
+  ros__parameters:
+
+    log_name: "go1_exp"
+    # process_noise
+    # C_p C_accel used for process noise
+    p_process_std: [0.001, 0.001, 0.001]
+    accel_input_std: [0.025, 0.025, 0.02] 
+    gyro_input_std: [0.03, 0.03, 0.03] 
+    accel_bias_process_std: [0.07, 0.02, 0.03]
+
+    # init_noise
+    p_init_std: [0.001, 0.001, 0.001]
+    v_init_std: [0.001, 0.001, 0.001]
+    foot_init_std: 0.001
+    accel_bias_init_std: 0.0001
+
+    # contact_noise
+    joint_position_std: [0.04, 0.04, 0.04]
+    joint_velocity_std: [0.22, 0.22, 0.22]
+    foot_slide_std: [0.00003, 0.00003, 0.00003]
+    foot_swing_std: 10000000.0   
+    contact_effort_theshold: 150.0
+
+    # kin_params
+    p_ib: [0.01592, 0.06659, 0.00617]
+
+    # vo_noise
+    vo_p_std:  [0.000015, 0.000015, 0.000015]
+    
+    # # vo_calibration_params
+    # # T_ic: (cam0 to imu0):
+    # # [[-0.01565831 -0.04952191 0.99865029 0.10578079]
+    # # [-0.99987729 0.00029446 -0.01566294 0.1104795 ]
+    # # [ 0.0004816 -0.99877299 -0.04952044 0.11233088]
+    # R_ic: 
+    # - [-0.01565831, -0.04952191, 0.99865029]
+    # - [-0.99987729, 0.00029446, -0.01566294]
+    # - [ 0.0004816, -0.99877299, -0.04952044]
+    # p_ic: [0.10578079, 0.1104795, 0.11233088]
+    
+    # est_params
+    rate: 200
+    interval: 5 
+    N: 10
+    est_type: 0
+    
+    #osqp solver params
+    rho: 0.1
+    alpha: 1.6
+    delta: 0.00001
+    sigma: 0.00001
+    verbose: false
+    adaptRho: true
+    polish: false
+    maxQPIter: 4000
+    primTol: 1e-6
+    dualTol: 1e-6
+    realtiveTol: 1e-6
+    absTol: 1e-6
+    timeLimit: 0.0028

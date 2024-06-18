@@ -1,0 +1,2 @@
+/usr/bin/ar qc libEstSub.a CMakeFiles/EstSub.dir/src/EstSub.cpp.o
+/usr/bin/ranlib libEstSub.a

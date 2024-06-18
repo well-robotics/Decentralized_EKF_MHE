@@ -1,0 +1,2 @@
+/usr/bin/ar qc libDecentralEst.a CMakeFiles/DecentralEst.dir/src/DecentralEst.cpp.o
+/usr/bin/ranlib libDecentralEst.a

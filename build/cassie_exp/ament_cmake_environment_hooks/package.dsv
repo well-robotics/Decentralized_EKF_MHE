@@ -1,0 +1,4 @@
+source;share/cassie_exp/local_setup.bash
+source;share/cassie_exp/local_setup.dsv
+source;share/cassie_exp/local_setup.sh
+source;share/cassie_exp/local_setup.zsh
