@@ -1,2 +1,0 @@
-/usr/bin/ar qc libMheSrb.a CMakeFiles/MheSrb.dir/src/MheSrb.cpp.o
-/usr/bin/ranlib libMheSrb.a

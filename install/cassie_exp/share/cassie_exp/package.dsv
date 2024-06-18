@@ -1,8 +1,0 @@
-source;share/cassie_exp/hook/cmake_prefix_path.ps1
-source;share/cassie_exp/hook/cmake_prefix_path.dsv
-source;share/cassie_exp/hook/cmake_prefix_path.sh
-source;share/cassie_exp/local_setup.bash
-source;share/cassie_exp/local_setup.dsv
-source;share/cassie_exp/local_setup.ps1
-source;share/cassie_exp/local_setup.sh
-source;share/cassie_exp/local_setup.zsh
