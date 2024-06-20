@@ -6,7 +6,7 @@ from ament_index_python.packages import get_package_share_directory
 
 def generate_launch_description():
     # Get the path to the YAML file
-    yaml_file_path = '/home/jkang/vo_ws/mhe_vio/src/go1_exp/config/parameters.yaml'
+    yaml_file_path = '/home/jkang/vo_ws/mhe_vio/src/go1_exp/config/parameters_go1.yaml'
     print(yaml_file_path)
     return LaunchDescription([
         # Set use_sim_time to true

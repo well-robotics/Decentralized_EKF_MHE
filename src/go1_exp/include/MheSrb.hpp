@@ -188,16 +188,6 @@ private:
 
     void schurComplement(SparseMatrix<double> &S_out, VectorXd &v_out, const SparseMatrix<double> &A, const SparseMatrix<double> &B, const SparseMatrix<double> &C, const SparseMatrix<double> &D, const VectorXd &u, const VectorXd &v);
 
-    // Marginalization Matrix predefine
-    // ------------------------------------
-    // MatrixXd Q_meas_marginalize = MatrixXd::Zero(12, 12);
-    // MatrixXd H_meas_marginalize = MatrixXd::Zero(12, 21);
-    // VectorXd y_meas_marginalize = VectorXd::Zero(12);
-
-    // MatrixXd Q_contact_marginalize = MatrixXd::Zero(12, 12);
-    // MatrixXd H_contact_marginalize = MatrixXd::Zero(12, 21);
-    // VectorXd y_contact_marginalize = VectorXd::Zero(12);
-
     SparseMatrix<double> M_p_next;
     VectorXd n_p_next = VectorXd::Zero(12);
 };

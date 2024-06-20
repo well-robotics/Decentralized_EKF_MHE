@@ -18,6 +18,16 @@
 #include <Eigen/Geometry>
 #include "../include/DecentralEst.hpp"
 #include "../include/data_logger.hpp"
+#include "../include/EigenUtils.hpp"
+
+#include "../include/Expressions/FL_foot.hh"
+#include "../include/Expressions/FR_foot.hh"
+#include "../include/Expressions/RL_foot.hh"
+#include "../include/Expressions/RR_foot.hh"
+#include "../include/Expressions/J_FL.hh"
+#include "../include/Expressions/J_FR.hh"
+#include "../include/Expressions/J_RL.hh"
+#include "../include/Expressions/J_RR.hh"
 
 using namespace Eigen;
 
@@ -28,11 +38,11 @@ namespace robotSub
     {
     private:
         rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
-        rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub;
+        rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr lo_sub;
 
         // Sparsly integrated VO
         rclcpp::Subscription<orbslam3_msgs::msg::VoRealtiveTransform>::SharedPtr vo_sub;
-        rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr vo_pose_sub;
+        rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr vo_p_sub;
 
         // Decentralized Orientation
         rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr orien_filter_sub;
@@ -52,6 +62,7 @@ namespace robotSub
         std::shared_ptr<robot_store> robot_store_;
         std::shared_ptr<robot_params> robot_params_;
 
+        double time_0_ = 0;
         int discrete_time = 0; // discrete time of the estimation
         int est_type_;         // 0: mhe, 1: KF
         int msg_num = 0;
@@ -70,9 +81,6 @@ namespace robotSub
         Quaterniond vo_quaternion_;
         Quaterniond vo_quaternion_offset_;
 
-
-        double time_0_ = 0;
-
         Vector3d gt_euler_ = Vector3d::Zero(); // [roll, pitch, yaw]
         Vector3d filter_euler_ = Vector3d::Zero();
 
@@ -80,10 +88,10 @@ namespace robotSub
         robotSub(const std::string &name);
         ~robotSub();
         void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
-        void joint_state_callback(const sensor_msgs::msg::JointState::SharedPtr msg);
+        void lo_callback(const sensor_msgs::msg::JointState::SharedPtr msg);
 
         // Sparsly integrated VO
-        void vo_pose_callback(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
+        void vo_p_callback(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
         void vo_callback(const orbslam3_msgs::msg::VoRealtiveTransform::SharedPtr msg);
 
         // Decentralized Orientation
@@ -100,7 +108,6 @@ namespace robotSub
     public:
         Data_Logger logger;
         void init_logging();
-        void QuaternionToEuler(Quaterniond quaternion, Vector3d &euler);
     };
 }
 #endif // ROBOT_SUB_HPP

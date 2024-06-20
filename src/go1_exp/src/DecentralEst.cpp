@@ -14,29 +14,40 @@ void DecentralizedEstimation::initialize(std::shared_ptr<robot_store> sub, std::
     est_type_ = params_ptr_->est_type_;
     dt_ = 1.0 / params_ptr_->rate_;
     N_ = params_ptr_->N_;
+
+    num_legs_ = params_ptr_->num_legs_;
+    leg_odom_type_ = params_ptr_->leg_odom_type_;
+    dim_state_ = 9 + 3 * leg_odom_type_ * (num_legs_);
+    dim_meas_ = 3 * (num_legs_);
+    dim_cam_ = 3;
+
     mhe_qp_.setHorizon(N_, dim_state_, dim_meas_, dim_cam_);
 
     contact_effort_theshold_ = params_ptr_->contact_effort_theshold_;
     gravity_ << 0, 0, -9.81;
+    R_ib_ = params_ptr_->R_ib_;
     p_ib_ << params_ptr_->p_ib_[0], params_ptr_->p_ib_[1], params_ptr_->p_ib_[2];
+
     //---------------------------------------------------------------
     // Gain setup from params; Q: gains, inv of covariance; C: covariance
-    infinite_ = params_ptr_->foot_swing_std_; // allows for foot state update
-
     StdVec2CovMat(params_ptr_->p_process_std_, C_p_);
     StdVec2CovMat(params_ptr_->accel_input_std_, C_accel_);
     StdVec2CovMat(params_ptr_->accel_bias_std_, C_accel_bias_);
     StdVec2CovMat(params_ptr_->joint_position_std_, C_encoder_position_);
     StdVec2CovMat(params_ptr_->joint_velocity_std_, C_encoder_velocity_);
     StdVec2CovMat(params_ptr_->gyro_input_std_, C_gyro_);
-    StdVec2CovMat(params_ptr_->foothold_slide_std_, C_foot_slide_);
+    StdVec2CovMat(params_ptr_->foot_slide_std_, C_foot_slide_);
+    StdVec2CovMat(params_ptr_->foot_swing_std_, C_foot_swing_);
 
     StdVec2GainMat(params_ptr_->accel_bias_std_, Q_accel_bias_);
+    StdVec2GainMat(params_ptr_->foot_slide_std_, Q_foot_slide_);
+    StdVec2GainMat(params_ptr_->foot_swing_std_, Q_foot_swing_);
     StdVec2GainMat(params_ptr_->vo_p_std_, Q_vo_p_);
 
     // Declare the sparse matrix to the proper size
     Q_prior_.resize(dim_state_, dim_state_);
     Q_prior_.setZero();
+    x_prior_ = VectorXd::Zero(dim_state_);
 
     Identity_dyn_.resize(dim_state_, dim_state_);
     Identity_dyn_.setIdentity();
@@ -44,6 +55,7 @@ void DecentralizedEstimation::initialize(std::shared_ptr<robot_store> sub, std::
     A_dyn_.setIdentity();
     Q_dyn_.resize(dim_state_, dim_state_);
     Q_dyn_.setZero();
+    b_dyn_ = VectorXd::Zero(dim_state_);
 
     Identity_meas_.resize(dim_meas_, dim_meas_);
     Identity_meas_.setIdentity();
@@ -51,6 +63,7 @@ void DecentralizedEstimation::initialize(std::shared_ptr<robot_store> sub, std::
     A_meas_.setZero();
     Q_meas_.resize(dim_meas_, dim_meas_);
     Q_meas_.setZero();
+    b_meas_ = VectorXd::Zero(dim_meas_);
 
     Identity_cam_meas_.resize(dim_cam_, dim_cam_);
     Identity_cam_meas_.setIdentity();
@@ -60,20 +73,48 @@ void DecentralizedEstimation::initialize(std::shared_ptr<robot_store> sub, std::
     A_cam_now_.setZero();
     Q_cam_.resize(dim_cam_, dim_cam_);
     Q_cam_.setZero();
+    b_cam_ = VectorXd::Zero(dim_cam_);
 
-    // Const Matrix setup
     //---------------------------------------------------------------
-    // A_meas_, *x:
-    //   [  0   I   0;  ]
+    // Const Matrix setup
     MatrixXd A_meas_dense = MatrixXd::Zero(dim_meas_, dim_state_);
-    A_meas_dense.block<3, 3>(0, 3) << Matrix3d::Identity();
-    A_meas_dense.block<3, 3>(3, 3) << Matrix3d::Identity();
-    A_meas_dense.block<3, 3>(6, 3) << Matrix3d::Identity();
-    A_meas_dense.block<3, 3>(9, 3) << Matrix3d::Identity();
-    EigenUtils::SparseMatrixBlockAsignFromDense(A_meas_, 0, 0, A_meas_dense);
+
+    switch (leg_odom_type_)
+    {
+    case 0:
+    {
+        // foot velocity measurement
+        // A_meas_, *x:
+        //   [  0   I   0;  ]
+        for (int i = 0; i < num_legs_; i++)
+        {
+            A_meas_dense.block<3, 3>(i * 3, 3) << Matrix3d::Identity();
+        }
+        break;
+    }
+    case 1:
+    {
+        // foot position measurement
+        // A_meas_, *x:
+        //   [  -I   0   0  I;  ]
+        for (int i = 0; i < num_legs_; i++)
+        {
+            A_meas_dense.block<3, 3>(i * 3, 0) << -Matrix3d::Identity();
+            A_meas_dense.block<3, 3>(i * 3, 9 + i * 3) << Matrix3d::Identity();
+        }
+        std::cout << A_meas_dense << std::endl;
+        break;
+    }
+    default:
+    {
+        std::cout << est_type_ + " not a valid leg odom type." << std::endl;
+    }
+    }
+
+    EigenUtils::SparseMatrixBlockAsignFromDense(A_meas_, 0, 0, A_meas_dense); /* code */
 
     // A_cam_pre_/A_cam_now_, *x:
-    //   diag[  I   0   0;  ]
+    //  [  I   0   0;  ]
     A_cam_pre_.coeffRef(0, 0) = 1.0;
     A_cam_pre_.coeffRef(1, 1) = 1.0;
     A_cam_pre_.coeffRef(2, 2) = 1.0;
@@ -84,26 +125,30 @@ void DecentralizedEstimation::initialize(std::shared_ptr<robot_store> sub, std::
     switch (est_type_)
     {
     case 0:
+    {
         InitializeMHE();
         break;
+    }
     case 1:
+    {
         InitializeKF();
         UpdateKF();
         break;
+    }
     default:
+    {
         std::cout << est_type_ + " not a valid estimation type." << std::endl;
         break;
+    }
     }
 }
 
 void DecentralizedEstimation::update(int T)
 {
-
     switch (est_type_)
     {
     case 0:
     {
-
         UpdateMHE(T);
         // std::cout << "updateMHE to " + std::to_string(T) << std::endl;
 
@@ -138,6 +183,9 @@ void DecentralizedEstimation::update(int T)
     case 1:
     {
         UpdateKF();
+        Vector3d p_imu_2_opti;
+        p_imu_2_opti << 0.016041, 0.089061, 0.0579875;
+        v_KF_b_ = R_input_rotation_stack_.back() * (x_KF_.segment<3>(3) + angular_b_input_stack_.back().cross(p_imu_2_opti));
         break;
     }
     }
@@ -145,7 +193,6 @@ void DecentralizedEstimation::update(int T)
 
 void DecentralizedEstimation::InitializeMHE()
 {
-
     //---------------------------------------------------------------
     // OSQP configurate
     mhe_qp_.osqp.settings()->setWarmStart(true);
@@ -169,79 +216,104 @@ void DecentralizedEstimation::InitializeMHE()
 
     Matrix3d R_sb = R_input_rotation_stack_.back();
 
-    // Q_meas_:
-    //  [   R_sb * J * cov_encoder_position^{-1} * J' * R_sb' ];
-    MatrixXd Q_meas_dense = MatrixXd::Zero(dim_meas_, dim_meas_);
-
-    // b_meas_:
-    //   [  -R_sb * J_foot * dq - R_sb omega.cross(kin_foot)   ];
-    for (int i = 0; i < num_legs_; i++)
-    {
-        b_meas_.segment<3>(i * 3) = -R_sb * J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0) * joint_velocity_stack_.back().segment<3>(i * 3) -
-                                   R_sb * angular_b_input_stack_.back().cross(p_imu_2_foot_stack_.back().block<3, 1>(i * 3, 0));
-        if (contact_input_stack_.back()(i) == 0.0)
-        {
-            Q_meas_dense.block<3, 3>(i * 3, i * 3) << 1 / infinite_ * Matrix3d::Identity();
-        }
-        else
-        {
-            MatrixXd G_meas_i = MatrixXd::Zero(3, 9);
-
-            MatrixXd C_meas_dense = MatrixXd::Zero(3, 3);
-
-            G_meas_i.block<3, 3>(0, 0) = -J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0);
-
-            Matrix3d omega_skew = Matrix3d::Zero();
-            EigenUtils::vector3dSkew(omega_skew, angular_b_input_stack_.back());
-            // std::cout << -omega_skew * J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0) << std::endl;
-            G_meas_i.block<3, 3>(0, 3) = -omega_skew * J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0);
-
-            Matrix3d kin_skew = Matrix3d::Zero();
-            EigenUtils::vector3dSkew(kin_skew, p_imu_2_foot_stack_.back().block<3, 1>(i * 3, 0));
-            G_meas_i.block<3, 3>(0, 6) = kin_skew;
-
-            MatrixXd C_meas_i = MatrixXd::Zero(9, 9);
-            C_meas_i.block<3, 3>(0, 0) = C_encoder_velocity_;
-            C_meas_i.block<3, 3>(3, 3) = C_encoder_position_;
-            C_meas_i.block<3, 3>(6, 6) = C_gyro_;
-
-            C_meas_dense = R_sb * G_meas_i * C_meas_i *
-                           G_meas_i.transpose() * R_sb.transpose();
-
-            // C_meas.block<3, 3>(i * 3, i * 3) = R_sb * G_meas_i * C_meas_i *
-            //                                    G_meas_i.transpose() * R_sb.transpose();
-
-            Q_meas_dense.block<3, 3>(i * 3, i * 3) = C_meas_dense.inverse();
-        }
-    }
-    Q_meas_.setZero();
-    EigenUtils::SparseMatrixBlockAsignFromDense(Q_meas_, 0, 0, Q_meas_dense);
-
     // x_prior:
     // [    0                       ;   ]   p_s
     // [    0                       ;   ]   v_s
     // [    0                       ;   ]   accel_bias_b
     x_prior_.segment<3>(0) << 0.0, 0.0, 0.0;
     x_prior_.segment<3>(3) << 0.0, 0.0, 0.0;
-    x_prior_.segment<3>(6) << 0.0, 0.0, 0.00;
+    x_prior_.segment<3>(6) << 0.0, 0.0, 0.0;
 
-    Matrix3d Q_pint = Matrix3d::Zero();
-    Matrix3d Q_vint = Matrix3d::Zero();
-
-    StdVec2GainMat(params_ptr_->p_init_std_, Q_pint);
-    StdVec2GainMat(params_ptr_->v_init_std_, Q_vint);
+    Matrix3d Q_p_int = Matrix3d::Zero();
+    Matrix3d Q_v_int = Matrix3d::Zero();
+    Matrix3d Q_accel_bias_init = Matrix3d::Zero();
+    StdVec2GainMat(params_ptr_->p_init_std_, Q_p_int);
+    StdVec2GainMat(params_ptr_->v_init_std_, Q_v_int);
+    StdVec2GainMat(params_ptr_->accel_bias_init_std_, Q_accel_bias_init);
 
     // Q_prior_0:
     //   [  Q_p_init  0          0                ;   ]
     //   [  0         Q_v_init   0                ;   ]
     //   [  0         0          Q_accel_bias_init;   ]
     Q_prior_.setZero();
-    EigenUtils::SparseMatrixBlockAsignFromDense(Q_prior_, 0, 0, Q_pint);
-    EigenUtils::SparseMatrixBlockAsignFromDense(Q_prior_, 3, 3, Q_vint);
-    EigenUtils::SparseMatrixBlockAsignFromDense(Q_prior_, 6, 6, 1 / std::pow(params_ptr_->accel_bias_init_std_, 2) * Matrix3d::Identity());
+    Q_meas_.setZero();
 
-    std::cout << "x0----------------------------" << std::endl;
-    std::cout << x_prior_ << std::endl;
+    EigenUtils::SparseMatrixBlockAsignFromDense(Q_prior_, 0, 0, Q_p_int);
+    EigenUtils::SparseMatrixBlockAsignFromDense(Q_prior_, 3, 3, Q_v_int);
+    EigenUtils::SparseMatrixBlockAsignFromDense(Q_prior_, 6, 6, Q_accel_bias_init);
+
+    // Q_meas_:
+    //  [   R_sb * J * cov_encoder_position^{-1} * J' * R_sb' ];
+    MatrixXd Q_meas_dense = MatrixXd::Zero(dim_meas_, dim_meas_);
+
+    // b_meas_:
+    //   [  -R_sb * J_foot * dq - R_sb omega.cross(kin_foot)   ];
+    switch (leg_odom_type_)
+    {
+    case 0:
+    {
+        // measurement
+        for (int i = 0; i < num_legs_; i++)
+        {
+            b_meas_.segment<3>(i * 3) = -R_sb * J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0) * joint_velocity_stack_.back().segment<3>(i * 3) -
+                                        R_sb * angular_b_input_stack_.back().cross(p_imu_2_foot_stack_.back().block<3, 1>(i * 3, 0));
+            if (contact_input_stack_.back()(i) == 0.0)
+            {
+                Q_meas_dense.block<3, 3>(i * 3, i * 3) << Q_foot_swing_;
+            }
+            else
+            {
+                MatrixXd G_meas_i = MatrixXd::Zero(3, 9);
+
+                MatrixXd C_meas_dense = MatrixXd::Zero(3, 3);
+
+                G_meas_i.block<3, 3>(0, 0) = -J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0);
+
+                Matrix3d omega_skew = Matrix3d::Zero();
+                EigenUtils::vector3dSkew(omega_skew, angular_b_input_stack_.back());
+                G_meas_i.block<3, 3>(0, 3) = -omega_skew * J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0);
+
+                Matrix3d kin_skew = Matrix3d::Zero();
+                EigenUtils::vector3dSkew(kin_skew, p_imu_2_foot_stack_.back().block<3, 1>(i * 3, 0));
+                G_meas_i.block<3, 3>(0, 6) = kin_skew;
+
+                MatrixXd C_meas_i = MatrixXd::Zero(9, 9);
+                C_meas_i.block<3, 3>(0, 0) = C_encoder_velocity_;
+                C_meas_i.block<3, 3>(3, 3) = C_encoder_position_;
+                C_meas_i.block<3, 3>(6, 6) = C_gyro_;
+
+                C_meas_dense = R_sb * G_meas_i * C_meas_i *
+                               G_meas_i.transpose() * R_sb.transpose();
+
+                Q_meas_dense.block<3, 3>(i * 3, i * 3) = C_meas_dense.inverse();
+            }
+        }
+        break;
+    }
+    case 1:
+    {
+        Matrix3d Q_foot_init = Matrix3d::Zero();
+        StdVec2GainMat(params_ptr_->foot_init_std_, Q_foot_init);
+
+        for (int i = 0; i < num_legs_; i++)
+        {
+            b_meas_.segment<3>(i * 3) = R_sb * p_imu_2_foot_stack_.back().block<3, 1>(i * 3, 0);
+
+            Q_meas_dense.block<3, 3>(i * 3, i * 3) << R_sb * (J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0) * C_encoder_position_ * J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0).transpose()).inverse() * R_sb.transpose();
+
+            x_prior_.segment<3>(9 + i * 3) = b_meas_.segment<3>(i * 3);
+            EigenUtils::SparseMatrixBlockAsignFromDense(Q_prior_, 9 + 3 * i, 9 + 3 * i, Q_foot_init);
+        }
+        break;
+    }
+    default:
+    {
+        std::cout << est_type_ + " not a valid leg odom type." << std::endl;
+        break;
+    }
+    }
+
+    EigenUtils::SparseMatrixBlockAsignFromDense(Q_meas_, 0, 0, Q_meas_dense);
 
     // || x_0 - x_prior||^2_{Q_prior_}
     mhe_qp_.addVariable("x_0", dim_state_);
@@ -263,9 +335,7 @@ void DecentralizedEstimation::InitializeMHE()
 
 void DecentralizedEstimation::UpdateMHE(int T)
 {
-    //---------------------------------------------------------------
-    // Dynamic cost & constraints at T-1
-    // 0.5 * || x_T - f( x_{T-1},u_{T-1} ) ||^2_{Q_{T-1}} => 0.5 * || Adyn x_{T-1} - x_T - b_dyn_ ||^2_{Q_{T-1}}
+
     std::string T_pre_string = std::to_string(T - 1);
     std::string T_string = std::to_string(T);
     std::string X_T_pre_string = "x_" + T_pre_string;
@@ -288,6 +358,10 @@ void DecentralizedEstimation::UpdateMHE(int T)
     Vector3d accel_s = accel_s_input_stack_.back();
     double dt = dt_;
 
+    //---------------------------------------------------------------
+    // Dynamic cost & constraints at T-1
+    // 0.5 * || x_T - f( x_{T-1},u_{T-1} ) ||^2_{Q_{T-1}} => 0.5 * || Adyn x_{T-1} - x_T - b_dyn_ ||^2_{Q_{T-1}}
+
     // b_dyn_:
     // [    - 0.5 * dt^2 * accel_s; ]   p_s
     // [    - dt * accel_s        ; ]   v_s
@@ -308,8 +382,8 @@ void DecentralizedEstimation::UpdateMHE(int T)
     // (G_dyn * diag[C_velocity, C_accel_, C_accel_bias_  ] * G_dyn').inverse()
     // G_dyn:
     // [  R_sb * dt          -0.5 * R_sb *dt^2   0;      ]
-    // [  0                  -R_sb *dt           0           0;      ]
-    // [  0                  0                   0           I * dt; ]
+    // [  0                  -R_sb *dt           0;      ]
+    // [  0                  0                   I * dt; ]
     Q_dyn_.setZero();
 
     MatrixXd G_dyn_pv = MatrixXd::Zero(6, 6);
@@ -329,6 +403,40 @@ void DecentralizedEstimation::UpdateMHE(int T)
                                                 6, 6,
                                                 1 / (dt * dt) * Q_accel_bias_);
 
+    switch (leg_odom_type_)
+    {
+    case 0:
+    {
+        break;
+    }
+    case 1:
+    {
+        for (int i = 0; i < num_legs_; i++)
+        {
+            if (contact_input_stack_.back()(i)) // if contact at foot_idx, fixed the stance foot position using large Q_foot_slide_
+            {
+                EigenUtils::SparseMatrixBlockAsignFromDense(Q_dyn_,
+                                                            9 + i * 3, 9 + i * 3,
+                                                            1 / (dt * dt) *
+                                                                R_sb * Q_foot_slide_ * R_sb.transpose());
+            }
+            else // if no contact at foot_idx, putting small gains on stance foot position
+            {
+                EigenUtils::SparseMatrixBlockAsignFromDense(Q_dyn_,
+                                                            9 + i * 3, 9 + i * 3,
+                                                            1 / (dt * dt) *
+                                                                R_sb * Q_foot_swing_ * R_sb.transpose());
+            }
+        }
+        break;
+    }
+    default:
+    {
+        std::cout << est_type_ + " not a valid leg odom type." << std::endl;
+        break;
+    }
+    }
+
     // A_dyn_ x_i - x_{i+1} - w_{i} = b_dyn_
     mhe_qp_.addConstraints(Dyn_string, b_dyn_, b_dyn_);
     mhe_qp_.addConstraintDependency(Dyn_string, W_T_pre_string, -Identity_dyn_);
@@ -344,13 +452,13 @@ void DecentralizedEstimation::UpdateMHE(int T)
     // Camera_measurement cost & constraints at T
     // Reserve cost for camera ahead of vo arrival
     // A_cam_pre_ * x_pre - A_cam_now_ * x_now - vcam_pre = b_cam_pre; for consequetive states
-
     b_cam_.segment(0, 3) << mhe_qp_.osqp_infinity * Vector3d::Ones(); // unconstrained place holder
 
     Q_cam_.setZero();
     Matrix3d Q_cam_dense = R_sb * Q_vo_p_ * R_sb.transpose();
     EigenUtils::SparseMatrixBlockAsignFromDense(Q_cam_, 0, 0, Q_cam_dense);
 
+    // A_cam_pre_ * x_pre - A_cam_now_ * x_now - vcam_pre = b_cam_pre; for consequetive states
     mhe_qp_.addConstraints(Cam_Meas_string, -b_cam_, b_cam_);
     mhe_qp_.addConstraintDependency(Cam_Meas_string, X_T_pre_string, A_cam_pre_);
     mhe_qp_.addConstraintDependency(Cam_Meas_string, X_T_string, -A_cam_now_);
@@ -360,8 +468,8 @@ void DecentralizedEstimation::UpdateMHE(int T)
     mhe_qp_.addCost(Cam_Meas_string, VectorXd::Zero(dim_cam_), Q_cam_);
     mhe_qp_.addCostDependency(Cam_Meas_string, Vcam_T_pre_string, Identity_cam_meas_);
 
-    // Measurement cost at T
     //---------------------------------------------------------------
+    // Measurement cost at T
     GetMeasurement(T);
     R_sb = R_input_rotation_stack_.back();
 
@@ -370,42 +478,67 @@ void DecentralizedEstimation::UpdateMHE(int T)
     Q_meas_.setZero();
     MatrixXd Q_meas_dense = MatrixXd::Zero(dim_meas_, dim_meas_);
 
-    for (int i = 0; i < num_legs_; i++)
+    switch (leg_odom_type_)
     {
-        b_meas_.segment<3>(i * 3) = -R_sb * J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0) * joint_velocity_stack_.back().segment<3>(i * 3) -
-                                   R_sb * angular_b_input_stack_.back().cross(p_imu_2_foot_stack_.back().block<3, 1>(i * 3, 0));
-        if (contact_input_stack_.back()(i) == 0.0)
+    case 0:
+    {
+        for (int i = 0; i < num_legs_; i++)
         {
-            Q_meas_dense.block<3, 3>(i * 3, i * 3) << 1 / infinite_ * Matrix3d::Identity();
+            b_meas_.segment<3>(i * 3) = -R_sb * J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0) * joint_velocity_stack_.back().segment<3>(i * 3) -
+                                        R_sb * angular_b_input_stack_.back().cross(p_imu_2_foot_stack_.back().block<3, 1>(i * 3, 0));
+            if (contact_input_stack_.back()(i) == 0.0)
+            {
+                Q_meas_dense.block<3, 3>(i * 3, i * 3) << Q_foot_swing_;
+            }
+            else
+            {
+                MatrixXd G_meas_i = MatrixXd::Zero(3, 9);
+
+                MatrixXd C_meas_dense = MatrixXd::Zero(3, 3);
+
+                G_meas_i.block<3, 3>(0, 0) = -J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0);
+
+                Matrix3d omega_skew = Matrix3d::Zero();
+                EigenUtils::vector3dSkew(omega_skew, angular_b_input_stack_.back());
+                G_meas_i.block<3, 3>(0, 3) = -omega_skew * J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0);
+
+                Matrix3d kin_skew = Matrix3d::Zero();
+                EigenUtils::vector3dSkew(kin_skew, p_imu_2_foot_stack_.back().block<3, 1>(i * 3, 0));
+                G_meas_i.block<3, 3>(0, 6) = kin_skew;
+
+                MatrixXd C_meas_i = MatrixXd::Zero(9, 9);
+                C_meas_i.block<3, 3>(0, 0) = C_encoder_velocity_;
+                C_meas_i.block<3, 3>(3, 3) = C_encoder_position_;
+                C_meas_i.block<3, 3>(6, 6) = C_gyro_;
+
+                C_meas_dense = R_sb * G_meas_i * C_meas_i *
+                               G_meas_i.transpose() * R_sb.transpose();
+
+                Q_meas_dense.block<3, 3>(i * 3, i * 3) = C_meas_dense.inverse();
+            }
         }
-        else
+        break;
+    }
+    case 1:
+    {
+        for (int i = 0; i < num_legs_; i++)
         {
+            b_meas_.segment<3>(i * 3) = R_sb * p_imu_2_foot_stack_.back().block<3, 1>(i * 3, 0);
 
-            MatrixXd C_meas_dense = MatrixXd::Zero(3, 3);
-
-            MatrixXd G_meas_i = MatrixXd::Zero(3, 9);
-
-            G_meas_i.block<3, 3>(0, 0) = -J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0);
-
-            Matrix3d omega_skew = Matrix3d::Zero();
-            EigenUtils::vector3dSkew(omega_skew, angular_b_input_stack_.back());
-            // std::cout << -omega_skew * J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0) << std::endl;
-            G_meas_i.block<3, 3>(0, 3) = -omega_skew * J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0);
-
-            Matrix3d kin_skew = Matrix3d::Zero();
-            EigenUtils::vector3dSkew(kin_skew, p_imu_2_foot_stack_.back().block<3, 1>(i * 3, 0));
-            G_meas_i.block<3, 3>(0, 6) = kin_skew;
-
-            MatrixXd C_meas_i = MatrixXd::Zero(9, 9);
-            C_meas_i.block<3, 3>(0, 0) = C_encoder_velocity_;
-            C_meas_i.block<3, 3>(3, 3) = C_encoder_position_;
-            C_meas_i.block<3, 3>(6, 6) = C_gyro_;
-
-            C_meas_dense = R_sb * G_meas_i * C_meas_i *
-                           G_meas_i.transpose() * R_sb.transpose();
-
-            Q_meas_dense.block<3, 3>(i * 3, i * 3) = C_meas_dense.inverse();
+            Q_meas_dense.block<3, 3>(i * 3, i * 3) << R_sb *
+                                                          (J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0) *
+                                                           C_encoder_position_ *
+                                                           J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0).transpose())
+                                                              .inverse() *
+                                                          R_sb.transpose();
         }
+        break;
+    }
+    default:
+    {
+        std::cout << est_type_ + " not a valid leg odom type." << std::endl;
+        break;
+    }
     }
 
     EigenUtils::SparseMatrixBlockAsignFromDense(Q_meas_, 0, 0, Q_meas_dense);
@@ -415,7 +548,7 @@ void DecentralizedEstimation::UpdateMHE(int T)
     mhe_qp_.addConstraintDependency(Meas_string, X_T_string, A_meas_);
     mhe_qp_.addConstraintDependency(Meas_string, V_T_string, -Identity_meas_);
 
-    // 0.5 * ||v_{i} ||^2 _{Q_meas_}
+    // 0.5 * || v_{i} ||^2 _{Q_meas_}
     mhe_qp_.addCost(Meas_string, VectorXd::Zero(dim_meas_), Q_meas_);
     mhe_qp_.addCostDependency(Meas_string, V_T_string, Identity_meas_);
 
@@ -436,28 +569,263 @@ void DecentralizedEstimation::UpdateMHE(int T)
     // Log2txt(Q_meas_,nameQm);
 }
 
-void DecentralizedEstimation::UpdateVOConstraints(int T)
+void DecentralizedEstimation::MarginalizeKF()
 {
-    std::map<int, Vector3d> vo_constraints_idx_regs;
-    std::map<int, double> vo_reliability_idx_regs;
-    double vo_reliability = 1.0;
+}
 
-    for (int i = 0; i < vo_curve_.node_count() - 1; ++i)
+// KF part validated
+void DecentralizedEstimation::InitializeKF()
+{
+    GetMeasurement(0);
+
+    Matrix3d R_sb = R_input_rotation_stack_.back();
+
+    // x_prior:
+    // [    0                       ;   ]   p_s
+    // [    0                       ;   ]   v_s
+    // [    R_sb * leg_imu_2_foot_b ;   ]   p_foot_s
+    // [    0                       ;   ]   accel_bias_b
+    x_prior_.segment<3>(0) << 0.0, 0.0, 0.0; // best to start on the ground,
+    x_prior_.segment<3>(3) << 0.0, 0.0, 0.0;
+    x_prior_.segment<3>(6) << 0.0, 0.0, 0.0;
+
+    // KF prior
+    MatrixXd C_prior = MatrixXd::Zero(dim_state_, dim_state_);
+
+    Matrix3d C_p_int = Matrix3d::Zero();
+    Matrix3d C_v_int = Matrix3d::Zero();
+    Matrix3d C_accel_bias_init = Matrix3d::Zero();
+    Matrix3d C_foot_int = Matrix3d::Zero();
+
+    StdVec2CovMat(params_ptr_->p_init_std_, C_p_int);
+    StdVec2CovMat(params_ptr_->v_init_std_, C_v_int);
+    StdVec2CovMat(params_ptr_->accel_bias_init_std_, C_accel_bias_init);
+    StdVec2CovMat(params_ptr_->foot_init_std_, C_foot_int);
+    C_prior.block<3, 3>(0, 0) = C_p_int;
+    C_prior.block<3, 3>(3, 3) = C_v_int;
+    C_prior.block<3, 3>(6, 6) = C_accel_bias_init;
+
+    MatrixXd C_meas = MatrixXd::Zero(dim_meas_, dim_meas_);
+
+    switch (leg_odom_type_)
     {
-        Vector3d pose_world_idx = vo_curve_._distances[i + 1];
+    case 0:
+    {
+        for (int i = 0; i < num_legs_; i++)
+        {
+            b_meas_.segment<3>(i * 3) = -R_sb * J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0) * joint_velocity_stack_.back().segment<3>(i * 3) -
+                                        R_sb * angular_b_input_stack_.back().cross(p_imu_2_foot_stack_.back().block<3, 1>(i * 3, 0));
+            if (contact_input_stack_.back()(i) == 0.0)
+            {
+                C_meas.block<3, 3>(i * 3, i * 3) << C_foot_swing_;
+            }
+            else
+            {
+                MatrixXd G_meas_i = MatrixXd::Zero(3, 9);
 
-        int idx = (vo_insert_idx_stack_.back() + i) *
-                      (dim_meas_ + dim_state_ + dim_cam_) +
-                  dim_meas_ + dim_state_;
-        vo_constraints_idx_regs.insert({idx, pose_world_idx});
-        vo_reliability_idx_regs.insert({vo_insert_discrete_time_stack_.back() + i, vo_reliability});
+                G_meas_i.block<3, 3>(0, 0) = -J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0);
 
-        // update the constraintbound for the marginalization, no marginalization if unbounded
-        std::string update_name = "VO_measurement_" + std::to_string(vo_insert_discrete_time_stack_.back() + i);
-        mhe_qp_.updateConstraintBound(update_name, -pose_world_idx, -pose_world_idx, true);
-        // mhe_qp_.updateCostGain(update_name, vo_reliability);
+                Matrix3d omega_skew = Matrix3d::Zero();
+                EigenUtils::vector3dSkew(omega_skew, angular_b_input_stack_.back());
+                G_meas_i.block<3, 3>(0, 3) = -omega_skew * J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0);
+
+                Matrix3d kin_skew = Matrix3d::Zero();
+                EigenUtils::vector3dSkew(kin_skew, p_imu_2_foot_stack_.back().block<3, 1>(i * 3, 0));
+                G_meas_i.block<3, 3>(0, 6) = kin_skew;
+
+                MatrixXd C_meas_i = MatrixXd::Zero(9, 9);
+                C_meas_i.block<3, 3>(0, 0) = C_encoder_velocity_;
+                C_meas_i.block<3, 3>(3, 3) = C_encoder_position_;
+                C_meas_i.block<3, 3>(6, 6) = C_gyro_;
+
+                C_meas.block<3, 3>(i * 3, i * 3) = R_sb * G_meas_i * C_meas_i *
+                                                   G_meas_i.transpose() * R_sb.transpose();
+            }
+        }
+        break;
     }
-    mhe_qp_.Update_Image_bound(vo_constraints_idx_regs, vo_reliability_idx_regs);
+    case 1:
+    {
+        for (int i = 0; i < num_legs_; i++)
+        {
+            b_meas_.segment<3>(i * 3) = R_sb * p_imu_2_foot_stack_.back().block<3, 1>(i * 3, 0);
+            C_meas.block<3, 3>(i * 3, i * 3) = R_sb * J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0) *
+                                               C_encoder_position_ *
+                                               J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0).transpose() * R_sb.transpose();
+            C_prior.block<3, 3>(9 + i * 3, 9 + i * 3) = C_foot_int;
+        }
+        x_prior_.segment(9, 3 * num_legs_) = b_meas_;
+        break;
+    }
+    default:
+    {
+        break;
+    }
+    }
+
+    // KF prior setup at time 0
+    x_KF_ = x_prior_;
+    C_KF_ = C_prior;
+
+    // KF measurement correction at time 0
+    K_KF_ = C_KF_ * A_meas_.transpose() * (A_meas_ * C_KF_ * A_meas_.transpose() + C_meas).inverse();
+    x_KF_ = x_KF_ + K_KF_ * (b_meas_ - A_meas_ * x_KF_);
+    C_KF_ = (MatrixXd::Identity(dim_state_, dim_state_) - K_KF_ * A_meas_) * C_KF_;
+}
+
+void DecentralizedEstimation::UpdateKF()
+{
+    //---------------------------------------------------------------
+    // KF prediction update
+
+    Matrix3d R_sb = R_input_rotation_stack_.back();
+    Vector3d accel_s = accel_s_input_stack_.back();
+    double dt = dt_;
+
+    // b_dyn_:
+    // [    - 0.5 * dt^2 * accel_s; ]   p_s
+    // [    - dt * accel_s        ; ]   v_s
+    // [    0                     ; ]   accel_bias_b
+    // [    0                     ; ]   p_foot_s
+    b_dyn_.segment(0, 3) << -0.5 * dt * dt * accel_s;
+    b_dyn_.segment(3, 3) << -dt * accel_s;
+
+    // A_dyn_:
+    // p_{i+1} = p_i + dt * v_i + 0.5 * dt^2 * accel_s - 0.5 * dt^2 * R_sb * accel_b_bias + w_p;
+    // v_{i+1} = v_i + dt * accel_s - dt * R_sb * accel_b_bias + w_v;
+    // accel_b_bias_{i+1} = accel_b_bias_{i} + w_a_bias
+    // p_foot_{i+1} = p_foot_{i} + w_foot
+    // [    I   dt* I   - 0.5 * dt^2 * R_sb;  ]
+    // [    0   I       - dt * R_sb        ;  ]
+    // [    0   0       I                  ;  ]
+    A_dyn_.setIdentity();
+
+    EigenUtils::SparseMatrixBlockAsignFromDense(A_dyn_, 0, 3, dt * Matrix3d::Identity());
+    EigenUtils::SparseMatrixBlockAsignFromDense(A_dyn_, 0, 6, -dt * dt / 2 * R_sb);
+    EigenUtils::SparseMatrixBlockAsignFromDense(A_dyn_, 3, 6, -dt * R_sb);
+
+    MatrixXd C_dyn = MatrixXd::Zero(dim_state_, dim_state_);
+
+    // Uncertainty from input
+    // ---------------------------------------------------------------
+    // G_dyn:
+    // [  R_sb * dt          -0.5 * R_sb *dt^2   0           0;      ]
+    // [  0                  -R_sb *dt           0           0;      ]
+    // [  0                  0                   I * dt      0;      ]
+    // [  0                  0                   0           R_sb * dt;]
+    // C_dyn = G_dyn * diag[C_velocity, C_accel_, C_accel_bias_, C_slip  ] * G_dyn'
+    // C_slip = infinite_, if contact(feet) = false
+    MatrixXd G_dyn = MatrixXd::Zero(dim_state_, dim_state_);
+    G_dyn.block<3, 3>(0, 0) = R_sb * dt;
+    G_dyn.block<3, 3>(0, 3) = -0.5 * R_sb * dt * dt;
+    G_dyn.block<3, 3>(3, 3) = -R_sb * dt;
+    G_dyn.block<3, 3>(6, 6) = Matrix3d::Identity() * dt;
+
+    MatrixXd C_input = MatrixXd::Zero(dim_state_, dim_state_);
+    C_input.block<3, 3>(0, 0) = C_p_;
+    C_input.block<3, 3>(3, 3) = C_accel_;
+    C_input.block<3, 3>(6, 6) = C_accel_bias_;
+
+    switch (leg_odom_type_)
+    {
+    case 0:
+    {
+        break;
+    }
+    case 1:
+    {
+        for (int i = 0; i < num_legs_; i++)
+        {
+            G_dyn.block<3, 3>(9 + i * 3, 9 + i * 3) = R_sb * dt;
+
+            // left foot covariance
+            if (contact_input_stack_.back()(i) == 0.0) // if contact at foot_idx, fixed the stance foot position using small C_foot_slide
+            {
+                C_input.block<3, 3>(9 + 3 * i, 9 + 3 * i) << C_foot_swing_;
+            }
+            else
+            {
+                C_input.block<3, 3>(9 + 3 * i, 9 + 3 * i) = C_foot_slide_;
+            }
+        }
+        break;
+    }
+    default:
+    {
+        break;
+    }
+    }
+
+    x_KF_ = A_dyn_ * x_KF_ - b_dyn_;
+    C_dyn = G_dyn * C_input * G_dyn.transpose();
+    C_KF_ = A_dyn_ * C_KF_ * A_dyn_.transpose() + C_dyn;
+
+    //---------------------------------------------------------------
+    // KF measurement correction
+    GetMeasurement(0);
+
+    R_sb = R_input_rotation_stack_.back();
+
+    MatrixXd C_meas = MatrixXd::Zero(dim_meas_, dim_meas_);
+
+    switch (leg_odom_type_)
+    {
+    case 0:
+    {
+        for (int i = 0; i < num_legs_; i++)
+        {
+            b_meas_.segment<3>(i * 3) = -R_sb * J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0) * joint_velocity_stack_.back().segment<3>(i * 3) -
+                                        R_sb * angular_b_input_stack_.back().cross(p_imu_2_foot_stack_.back().block<3, 1>(i * 3, 0));
+            if (contact_input_stack_.back()(i) == 0.0)
+            {
+                C_meas.block<3, 3>(i * 3, i * 3) << C_foot_swing_;
+            }
+            else
+            {
+                MatrixXd G_meas_i = MatrixXd::Zero(3, 9);
+
+                G_meas_i.block<3, 3>(0, 0) = -J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0);
+
+                Matrix3d omega_skew = Matrix3d::Zero();
+                EigenUtils::vector3dSkew(omega_skew, angular_b_input_stack_.back());
+                G_meas_i.block<3, 3>(0, 3) = -omega_skew * J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0);
+
+                Matrix3d kin_skew = Matrix3d::Zero();
+                EigenUtils::vector3dSkew(kin_skew, p_imu_2_foot_stack_.back().block<3, 1>(i * 3, 0));
+                G_meas_i.block<3, 3>(0, 6) = kin_skew;
+
+                MatrixXd C_meas_i = MatrixXd::Zero(9, 9);
+                C_meas_i.block<3, 3>(0, 0) = C_encoder_velocity_;
+                C_meas_i.block<3, 3>(3, 3) = C_encoder_position_;
+                C_meas_i.block<3, 3>(6, 6) = C_gyro_;
+
+                C_meas.block<3, 3>(i * 3, i * 3) = R_sb * G_meas_i * C_meas_i *
+                                                   G_meas_i.transpose() * R_sb.transpose();
+            }
+        }
+        break;
+    }
+    case 1:
+    {
+        for (int i = 0; i < num_legs_; i++)
+        {
+            b_meas_.segment<3>(i * 3) = R_sb * p_imu_2_foot_stack_.back().block<3, 1>(i * 3, 0);
+            C_meas.block<3, 3>(i * 3, i * 3) = R_sb * J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0) *
+                                               C_encoder_position_ *
+                                               J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0).transpose() * R_sb.transpose();
+        }
+        break;
+    }
+    default:
+    {
+        break;
+    }
+    }
+
+    // KF measurement correction at time 0
+    K_KF_ = C_KF_ * A_meas_.transpose() * (A_meas_ * C_KF_ * A_meas_.transpose() + C_meas).inverse();
+    x_KF_ = x_KF_ + K_KF_ * (b_meas_ - A_meas_ * x_KF_);
+    C_KF_ = (MatrixXd::Identity(dim_state_, dim_state_) - K_KF_ * A_meas_) * C_KF_;
 }
 
 // Tested
@@ -474,75 +842,9 @@ void DecentralizedEstimation::GetMeasurement(int T)
     joint_position_ = robot_sub_ptr_->joint_states_position_;
     joint_velocity_ = robot_sub_ptr_->joint_states_velocity_;
     // joint_effort_ = robot_sub_ptr_->joint_states_effort_;
-
-    p_imu_2_foot_ = MatrixXd::Zero(12, 1);
-    J_imu_2_foot_ = MatrixXd::Zero(12, 3);
-
-    // kinematics off_set from unitree go1 floating base to unitree imu
-    // MatrixXd off_set = MatrixXd::Zero(1, 3);
-    // off_set << -0.01592, -0.06659, -0.00617; // unitree base to unitree imu,     p_FL_foot = p_FL_foot - off_set;
-    // MatrixXd off_set_ngimu_unitree_imu = MatrixXd::Zero(1, 3);
-    // off_set_ngimu_unitree_imu << -0.0270, -0.0522, -0.1415; // ngimu to unitree imu
-
-    // Foot order: FR, FL, RR, RL; For both hardware and kinematics lib
-    // Joints Order: hip, thig, calf, foot(fixed 0); For both hardware and kinematics lib
-    VectorXd joint_position_append = VectorXd::Zero(22); // [p,v, 4 foot * 4 joints, ]
-    for (int i = 0; i < num_legs_; i++)
-    {
-        joint_position_append.segment<3>(6 + i * 4) = joint_position_.segment<3>(i * 3); // first 6 are dof of floating base
-        joint_position_append(6 + i * 4 + 3) = 0.0;                                      // fixed foot joints
-    }
-
-    //------------------------------------------------------
-    // FR
-    MatrixXd p_FR_foot = MatrixXd::Zero(1, 3);
-    SymFunction::FR_foot(p_FR_foot, joint_position_append);
-    p_FR_foot = p_FR_foot + p_ib_;
-    p_imu_2_foot_.block<3, 1>(0 * 3, 0) = p_FR_foot.transpose();
-
-    MatrixXd J_FR_foot = MatrixXd::Zero(3, 22);
-    SymFunction::J_FR(J_FR_foot, joint_position_append);
-    J_imu_2_foot_.block<3, 3>(0 * 3, 0) = J_FR_foot.block<3, 3>(0, 6 + 0 * 4);
-
-    // FL
-    MatrixXd p_FL_foot = MatrixXd::Zero(1, 3);
-    SymFunction::FL_foot(p_FL_foot, joint_position_append);
-    p_FL_foot = p_FL_foot + p_ib_;
-    p_imu_2_foot_.block<3, 1>(1 * 3, 0) = p_FL_foot.transpose();
-
-    MatrixXd J_FL_foot = MatrixXd::Zero(3, 22);
-    SymFunction::J_FL(J_FL_foot, joint_position_append);
-    J_imu_2_foot_.block<3, 3>(1 * 3, 0) = J_FL_foot.block<3, 3>(0, 6 + 1 * 4);
-
-    // RR
-    MatrixXd p_RR_foot = MatrixXd::Zero(1, 3);
-    SymFunction::RR_foot(p_RR_foot, joint_position_append);
-    p_RR_foot = p_RR_foot + p_ib_;
-    p_imu_2_foot_.block<3, 1>(2 * 3, 0) = p_RR_foot.transpose();
-
-    MatrixXd J_RR_foot = MatrixXd::Zero(3, 22);
-    SymFunction::J_RR(J_RR_foot, joint_position_append);
-    J_imu_2_foot_.block<3, 3>(2 * 3, 0) = J_RR_foot.block<3, 3>(0, 6 + 2 * 4);
-
-    // RL
-    MatrixXd p_RL_foot = MatrixXd::Zero(1, 3);
-    SymFunction::RL_foot(p_RL_foot, joint_position_append);
-    p_RL_foot = p_RL_foot + p_ib_;
-    p_imu_2_foot_.block<3, 1>(3 * 3, 0) = p_RL_foot.transpose();
-
-    MatrixXd J_RL_foot = MatrixXd::Zero(3, 22);
-    SymFunction::J_RL(J_RL_foot, joint_position_append);
-    J_imu_2_foot_.block<3, 3>(3 * 3, 0) = J_RL_foot.block<3, 3>(0, 6 + 3 * 4);
-
-    //------------------------------------------------------
-    // contact
-    contact_ = Vector4d::Zero();
-    for (int i = 0; i < num_legs_; i++)
-    {
-        contact_(i) = (joint_position_(12 + i) >= contact_effort_theshold_) ? 1.0 : 0.0;
-    }
-    // std::cout << "contact_effort_: " << joint_position_.segment<4>(12) << std::endl;
-    // std::cout << "contact_flag_: " << contact_ << std::endl;
+    p_imu_2_foot_ = robot_sub_ptr_->p_imu_2_foot_;
+    J_imu_2_foot_ = robot_sub_ptr_->J_imu_2_foot_;
+    contact_ = robot_sub_ptr_->contact_;
 
     //------------------------------------------------------
     // Sychronize the VO frames to the nearest IMU frames to the left
@@ -627,7 +929,6 @@ void DecentralizedEstimation::GetMeasurement(int T)
     // discrete time optimization window start: T-N_
     // if (int(accel_s_input_stack_.size()) > N_ + 1) // should be N_+1 to store the measments in the current optimization window
     if (int(accel_s_input_stack_.size()) > 4 * N_ + 1)
-
     {
         discrete_time_stack.erase(discrete_time_stack.begin());
         R_input_rotation_stack_.erase(R_input_rotation_stack_.begin());
@@ -651,157 +952,28 @@ void DecentralizedEstimation::GetMeasurement(int T)
     }
 }
 
-void DecentralizedEstimation::MarginalizeKF()
+void DecentralizedEstimation::UpdateVOConstraints(int T)
 {
-}
+    std::map<int, Vector3d> vo_constraints_idx_regs;
+    std::map<int, double> vo_reliability_idx_regs;
+    double vo_reliability = 1.0;
 
-// KF part validated
-void DecentralizedEstimation::InitializeKF()
-{
-    GetMeasurement(0);
-
-    Matrix3d R_sb = R_input_rotation_stack_.back();
-
-    for (int i = 0; i < num_legs_; i++)
+    for (int i = 0; i < vo_curve_.node_count() - 1; ++i)
     {
-        b_meas_.segment<3>(i * 3) = R_sb * p_imu_2_foot_stack_.back().block<3, 1>(i * 3, 0);
+        Vector3d pose_world_idx = vo_curve_._distances[i + 1];
+
+        int idx = (vo_insert_idx_stack_.back() + i) *
+                      (dim_meas_ + dim_state_ + dim_cam_) +
+                  dim_meas_ + dim_state_;
+        vo_constraints_idx_regs.insert({idx, pose_world_idx});
+        vo_reliability_idx_regs.insert({vo_insert_discrete_time_stack_.back() + i, vo_reliability});
+
+        // update the constraintbound for the marginalization, no marginalization if unbounded
+        std::string update_name = "VO_measurement_" + std::to_string(vo_insert_discrete_time_stack_.back() + i);
+        mhe_qp_.updateConstraintBound(update_name, -pose_world_idx, -pose_world_idx, true);
+        // mhe_qp_.updateCostGain(update_name, vo_reliability);
     }
-
-    // x_prior:
-    // [    0                       ;   ]   p_s
-    // [    0                       ;   ]   v_s
-    // [    R_sb * leg_imu_2_foot_b ;   ]   p_foot_s
-    // [    0                       ;   ]   accel_bias_b
-    x_prior_.segment<3>(0) << 0.0, 0.0, 0.0; // best to start on the ground,
-    x_prior_.segment<3>(3) << 0.0, 0.0, 0.0;
-    x_prior_.segment(6, dim_meas_) = b_meas_;
-    x_prior_.segment<3>(6 + dim_meas_) << 0.0, 0.0, 0.0;
-
-    // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    x_KF_ = x_prior_;
-
-    // KF prior
-    MatrixXd C_prior = MatrixXd::Zero(dim_state_, dim_state_);
-
-    Matrix3d C_pint = Matrix3d::Zero();
-    Matrix3d C_vint = Matrix3d::Zero();
-
-    StdVec2CovMat(params_ptr_->p_init_std_, C_pint);
-    StdVec2CovMat(params_ptr_->v_init_std_, C_vint);
-
-    C_prior.block<3, 3>(0, 0) = C_pint;
-    C_prior.block<3, 3>(3, 3) = C_vint;
-    C_prior.block<3, 3>(6, 6) = std::pow(params_ptr_->foot_init_std_, 2) * MatrixXd::Identity(3, 3);
-    C_prior.block<3, 3>(9, 9) = std::pow(params_ptr_->foot_init_std_, 2) * MatrixXd::Identity(3, 3);
-    C_prior.block<3, 3>(12, 12) = std::pow(params_ptr_->foot_init_std_, 2) * MatrixXd::Identity(3, 3);
-    C_prior.block<3, 3>(15, 15) = std::pow(params_ptr_->foot_init_std_, 2) * MatrixXd::Identity(3, 3);
-    C_prior.block<3, 3>(18, 18) = std::pow(params_ptr_->accel_bias_init_std_, 2) * Matrix3d::Identity();
-
-    C_KF_ = C_prior;
-}
-
-void DecentralizedEstimation::UpdateKF()
-{
-    GetMeasurement(0);
-
-    Matrix3d R_sb = R_input_rotation_stack_.back();
-    // C_meas
-    //  [   R_sb * C_kinematic  * R_sb';    ]
-    MatrixXd C_meas = MatrixXd::Zero(dim_meas_, dim_meas_);
-
-    for (int i = 0; i < num_legs_; i++)
-    {
-        b_meas_.segment<3>(i * 3) = R_sb * p_imu_2_foot_stack_.back().block<3, 1>(i * 3, 0);
-        // C_meas.block<3, 3>(i * 3, i * 3) = R_sb * J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0) *
-        //                                    C_encoder_position_ *
-        //                                    J_imu_2_foot_stack_.back().block<3, 3>(i * 3, 0).transpose() * R_sb.transpose();
-        C_meas.block<3, 3>(i * 3, i * 3) = R_sb *
-                                           C_encoder_position_ *
-                                           R_sb.transpose();
-    }
-    // std::cout << "b_meas_:" << b_meas_ << std::endl;
-
-    K_KF_ = C_KF_ * A_meas_.transpose() * (A_meas_ * C_KF_ * A_meas_.transpose() + C_meas).inverse();
-    x_KF_ = x_KF_ + K_KF_ * (b_meas_ - A_meas_ * x_KF_);
-    C_KF_ = (MatrixXd::Identity(dim_state_, dim_state_) - K_KF_ * A_meas_) * C_KF_;
-
-    // std::cout << "correct" << K_KF_ * (b_meas_ - A_meas_ * x_KF_) << std::endl;
-    // KF prediction update
-    //---------------------------------------------------------------
-    // Matrix3d R_sb = R_input_rotation_stack_.back();
-    Vector3d accel_s = accel_s_input_stack_.back();
-    double dt = dt_;
-    std::cout << "dt" << dt << std::endl;
-    // b_dyn_:
-    // [    - 0.5 * dt^2 * accel_s; ]   p_s
-    // [    - dt * accel_s        ; ]   v_s
-    // [    0                     ; ]   p_foot_s
-    // [    0                     ; ]   accel_bias_b
-    b_dyn_.segment(0, 3) << -0.5 * dt * dt * accel_s;
-    b_dyn_.segment(3, 3) << -dt * accel_s;
-
-    // A_dyn_:
-    // p_{i+1} = p_i + dt * v_i + 0.5 * dt^2 * accel_s - 0.5 * dt^2 * R_sb * accel_b_bias + w_p;
-    // v_{i+1} = v_i + dt * accel_s - dt * R_sb * accel_b_bias + w_v;
-    // p_foot_{i+1} = p_foot_{i} + w_foot
-    // accel_b_bias_{i+1} = accel_b_bias_{i} + w_a_bias
-    // [    I   dt* I   0   - 0.5 * dt^2 * R_sb;  ]
-    // [    0   I       0   - dt * R_sb        ;  ]
-    // [    0   0       I   0                  ;  ]
-    // [    0   0       0   I                  ;  ]
-    A_dyn_.setIdentity();
-
-    EigenUtils::SparseMatrixBlockAsignFromDense(A_dyn_, 0, 3, dt * Matrix3d::Identity());
-    EigenUtils::SparseMatrixBlockAsignFromDense(A_dyn_, 0, 18, -dt * dt / 2 * R_sb);
-    EigenUtils::SparseMatrixBlockAsignFromDense(A_dyn_, 3, 18, -dt * R_sb);
-    x_KF_ = A_dyn_ * x_KF_ - b_dyn_;
-
-    double infinite_ = params_ptr_->foot_swing_std_;
-
-    MatrixXd C_dyn = MatrixXd::Zero(dim_state_, dim_state_);
-
-    // Uncertainty from input
-    // ---------------------------------------------------------------
-    // G_dyn:
-    // [  R_sb * dt          -0.5 * R_sb *dt^2   0           0;      ]
-    // [  0                  -R_sb *dt           0           0;      ]
-    // [  0                  0                   R_sb * dt   0;      ]
-    // [  0                  0                   0           I * dt; ]
-    // C_dyn = G_dyn * diag[C_velocity, C_accel_, C_slip, C_accel_bias_  ] * G_dyn'
-    // C_slip = infinite_, if contact(feet) = false
-
-    MatrixXd G_dyn = MatrixXd::Zero(dim_state_, dim_state_);
-    G_dyn.block<3, 3>(0, 0) = R_sb * dt;
-    G_dyn.block<3, 3>(0, 3) = -0.5 * R_sb * dt * dt;
-    G_dyn.block<3, 3>(3, 3) = -R_sb * dt;
-    G_dyn.block<3, 3>(6, 6) = R_sb * dt;
-    G_dyn.block<3, 3>(9, 9) = R_sb * dt;
-    G_dyn.block<3, 3>(12, 12) = R_sb * dt;
-    G_dyn.block<3, 3>(15, 15) = R_sb * dt;
-    G_dyn.block<3, 3>(18, 18) = Matrix3d::Identity() * dt;
-
-    MatrixXd C_input = MatrixXd::Zero(dim_state_, dim_state_);
-    C_input.block<3, 3>(0, 0) = C_p_;
-    C_input.block<3, 3>(3, 3) = C_accel_;
-    C_input.block<3, 3>(6, 6) = C_foot_slide_;
-    C_input.block<3, 3>(9, 9) = C_foot_slide_;
-    C_input.block<3, 3>(12, 12) = C_foot_slide_;
-    C_input.block<3, 3>(15, 15) = C_foot_slide_;
-    C_input.block<3, 3>(18, 18) = C_accel_bias_;
-    for (int i = 0; i < num_legs_; i++)
-    {
-        // left foot covariance
-        if (contact_input_stack_.back()(i) == 0.0) // if contact at foot_idx, fixed the stance foot position using large Q_foot_slide
-        {
-            C_input.block<3, 3>(6 + 3 * i, 6 + 3 * i) << infinite_ * Matrix3d::Identity();
-        }
-    }
-
-    C_dyn = G_dyn * C_input * G_dyn.transpose();
-    // std::cout << C_dyn << std::endl;
-    C_KF_ = A_dyn_ * C_KF_ * A_dyn_.transpose() + C_dyn;
-    // std::cout << "x_KF"<< x_KF_<< std::endl;
-    //---------------------------------------------------------------
+    mhe_qp_.Update_Image_bound(vo_constraints_idx_regs, vo_reliability_idx_regs);
 }
 
 void DecentralizedEstimation::reset()
@@ -826,11 +998,11 @@ void DecentralizedEstimation::StdVec2GainMat(const std::vector<double> &std, Mat
 
 void DecentralizedEstimation::Log2txt(const MatrixXd matrix, std::string filename)
 {
-        IOFormat CleanFmt(10, 0, ", ", "\n", "[", "]");
-        std::string path = "/home/jkang/mhe_ros/logtxt/";
-        std::ofstream outfile(path + filename + ".txt");
-        outfile << matrix.format(CleanFmt);
-        outfile.close();
+    IOFormat CleanFmt(10, 0, ", ", "\n", "[", "]");
+    std::string path = "/home/jkang/mhe_ros/logtxt/";
+    std::ofstream outfile(path + filename + ".txt");
+    outfile << matrix.format(CleanFmt);
+    outfile.close();
 }
 
 void DecentralizedEstimation::tic(std::string str, int mode)

@@ -525,15 +525,6 @@ void MHEproblem::Update_Image_bound(std::map<int, Vector3d> vo_constraints_idx_r
 
 bool MHEproblem::marginalizeQP(int T)
 {
-
-    // 1. delete one state variables.
-    // 2. delete one dynamic cost, one measurment cost from regs.
-    // 3. all var_idx_regs reduced by var_size.
-    // 4. remove H first block row, first block column.
-    // 5. remove g first block row.
-    // Todo:
-    // 6. add arrival cost term in the form of H + H_arr and g + g_arr
-
     // get rid of the oldest opt variable
     std::string x_marginalize_string = "x_" + std::to_string(T);
     std::string x_marginalize_leftover_string = "x_" + std::to_string(T + 1);
@@ -562,18 +553,18 @@ bool MHEproblem::marginalizeQP(int T)
     // Hsparse_new.resize(nVar, nVar);
     // Hsparse_new.setZero();
 
-    Hsparse_new = Hsparse.block(var_marginalize_size, var_marginalize_size, Hsparse.rows() - var_marginalize_size, Hsparse.cols() - var_marginalize_size);
+    Hsparse_new = Hsparse.block(var_marginalize_size, var_marginalize_size,
+                                Hsparse.rows() - var_marginalize_size, Hsparse.cols() - var_marginalize_size);
 
     g_new = g.segment(var_marginalize_size, g.size() - var_marginalize_size);
 
     if (Cost_regs.count(dyn_marginalize_string))
     {
-
         // computing the schur complement of x_{i+1}, line by line approach
 
         // compute the recursive prior M_p and n_p and marginal out H and g
-        // 0.5 * (x_0 - \hat(x_0)) ^ T Q_prior_0(x_0 - \hat(x_0))
-        //= 0.5 * (x - b) ^ T Q(x - b) = 0.5 *x ^ T Q x - b ^ T Q x
+        // 0.5 * (x_0 - \hat(x_0)) ^ T Q_prior_0 (x_0 - \hat(x_0))
+        // = 0.5 * (x - b) ^ T Q (x - b) = 0.5 *x ^ T Q x - b ^ T Q x
         if (Cost_regs.count(cost_prior_string))
         {
             M_p = Cost_regs[cost_prior_string].Q;
@@ -644,15 +635,8 @@ bool MHEproblem::marginalizeQP(int T)
 
             SparseMatrix<double> C = B.transpose();
 
-            // solver_33.compute(A);
-
-            // SparseMatrixType A_inv = solver_33.solve(I_33);
-            // std::cout << MatrixXd(A_inv) << std::endl;
-
-            // SparseMatrixType A_inv = MatrixXd(A).llt().solve(MatrixXd::Identity(33,33)).sparseView(); // seems not psotive definte
+            // SparseMatrixType A_inv = MatrixXd(A).llt().solve(MatrixXd::Identity(dim_cam + dim_state + dim_meas,dim_cam + dim_state + dim_meas)).sparseView()); // seems not psotive definte
             SparseMatrixType A_inv = MatrixXd(A).inverse().sparseView();
-
-            // std::cout << "AInv" << MatrixXd(A).inverse() << std::endl;
 
             VectorXd u = VectorXd::Zero(dim_state + dim_cam + dim_meas);
             u.segment(0, dim_state + dim_cam) = -b_marginalize + A_marginalize * M_p_inv * n_p;
@@ -663,7 +647,6 @@ bool MHEproblem::marginalizeQP(int T)
 
             M_p = M_p_next;
             n_p = n_p_next;
-            std::cout << "eq" << std::endl;
         }
         else
         {
@@ -694,10 +677,6 @@ bool MHEproblem::marginalizeQP(int T)
 
             SparseMatrix<double> A_12 = -A_dyn_marginalize * M_p_inv * H_meas_marginalize.transpose();
             SparseMatrix<double> A_21 = A_12.transpose();
-            // std::cout << "11" << MatrixXd(A_11) << std::endl;
-            // std::cout << "22" <<MatrixXd(A_22) << std::endl;
-            // std::cout << "12" << MatrixXd(A_12) << std::endl;
-            // std::cout << "21" << MatrixXd(A_21) << std::endl;
 
             EigenUtils::SparseMatrixBlockAsign(A, 0, 0, A_11);
             EigenUtils::SparseMatrixBlockAsign(A, dim_state, dim_state, A_22);
@@ -721,86 +700,6 @@ bool MHEproblem::marginalizeQP(int T)
             M_p = M_p_next;
             n_p = n_p_next;
         }
-
-        // std::cout << MatrixXd(M_p).inverse() * n_p << std::endl;
-
-        // if (0)
-        // {
-        //     // computing the schur complement of x_{i+1}, direct computation
-
-        //     int variable_marginalize = 21 + 12 + 21;
-        //     int constraints_marginalize = 21 + 12;
-        //     int nVar_marginalize = variable_marginalize + constraints_marginalize;
-
-        //     // compute the recursive prior M_p and n_p and marginal out H and g
-        //     // 0.5 * (x_0 - \hat(x_0)) ^ T Q_prior_0(x_0 - \hat(x_0))
-        //     //= 0.5 * (x - b) ^ T Q(x - b) = 0.5 *x ^ T Q x - b ^ T Q x
-        //     std::string cost_prior_string = "Prior_0";
-        //     if (Cost_regs.count(cost_prior_string))
-        //     {
-        //         M_p = Cost_regs[cost_prior_string].Q;
-        //         n_p = -M_p * Cost_regs[cost_prior_string].b;
-        //         Cost_regs.erase(cost_prior_string);
-        //     }
-
-        //     SparseMatrix<double> R_meas_marginalize;
-        //     SparseMatrix<double> H_meas_marginalize;
-        //     VectorXd y_meas_marginalize = VectorXd::Zero(12);
-
-        //     if (LinearConstraint_regs.count(meas_marginalize_string))
-        //     {
-        //         R_meas_marginalize = Cost_regs[meas_marginalize_string].Q;
-        //         H_meas_marginalize = LinearConstraint_regs[meas_marginalize_string].depVarMap[x_marginalize_string];
-        //         y_meas_marginalize = LinearConstraint_regs[meas_marginalize_string].lb;
-
-        //         Cost_regs.erase("Measurement_" + std::to_string(T));
-        //     };
-
-        //     SparseMatrix<double> Q_dyn_marginalize = Cost_regs[dyn_marginalize_string].Q;
-        //     SparseMatrix<double> A_dyn_marginalize = LinearConstraint_regs[dyn_marginalize_string].depVarMap[x_marginalize_string];
-        //     VectorXd b_dyn_marginalize = -LinearConstraint_regs[dyn_marginalize_string].lb;
-
-        //     SparseMatrix<double> I_21(21, 21);
-        //     I_21.setIdentity();
-        //     SparseMatrix<double> I_12(12, 12);
-        //     I_12.setIdentity();
-
-        //     SparseMatrix<double> A(nVar_marginalize, nVar_marginalize);
-
-        //     EigenUtils::SparseMatrixBlockAsign(A, 0, 0, M_p);
-        //     EigenUtils::SparseMatrixBlockAsign(A, 0, variable_marginalize, A_dyn_marginalize.transpose());
-        //     EigenUtils::SparseMatrixBlockAsign(A, variable_marginalize, 0, A_dyn_marginalize);
-        //     EigenUtils::SparseMatrixBlockAsign(A, 0, variable_marginalize + 21, H_meas_marginalize.transpose());
-        //     EigenUtils::SparseMatrixBlockAsign(A, variable_marginalize + 21, 0, H_meas_marginalize);
-
-        //     EigenUtils::SparseMatrixBlockAsign(A, 21, 21, Q_dyn_marginalize);
-        //     EigenUtils::SparseMatrixBlockAsign(A, 21 + 21, 21 + 21, R_meas_marginalize);
-
-        //     EigenUtils::SparseMatrixBlockAsign(A, variable_marginalize, 21, I_21);
-        //     EigenUtils::SparseMatrixBlockAsign(A, 21, variable_marginalize, I_21);
-
-        //     EigenUtils::SparseMatrixBlockAsign(A, variable_marginalize + 21, 21 + 21, I_12);
-        //     EigenUtils::SparseMatrixBlockAsign(A, 21 + 21, variable_marginalize + 21, I_12);
-
-        //     // Log2txt(MatrixXd(A), "A_marg");
-
-        //     VectorXd u = VectorXd::Zero(nVar_marginalize);
-        //     u.segment(0, 21) << -n_p;
-        //     u.segment(variable_marginalize, 21) << -b_dyn_marginalize;
-        //     u.segment(variable_marginalize + 21, 12) << y_meas_marginalize;
-        //     VectorXd v = VectorXd::Zero(21);
-
-        //     SparseMatrix<double> B(nVar_marginalize, 21);
-        //     EigenUtils::SparseMatrixBlockAsign(B, variable_marginalize, 0, -I_21);
-        //     SparseMatrix<double> C = B.transpose();
-
-        //     SparseMatrix<double> D(21, 21);
-        //     D.setZero();
-        //     // SparseMatrx<double> S_out(21, 21);
-        //     // VectorXd v_out(21);
-
-        //     schurComplement(M_p, n_p, A, B, C, D, u, v);
-        // }
 
         // combined terms
         SparseMatrix<double> H_marginalize_sparse = M_p;

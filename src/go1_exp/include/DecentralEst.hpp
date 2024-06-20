@@ -9,16 +9,6 @@
 #include "../include/EigenUtils.hpp"
 #include "../include/spline/Bezier_simple.hpp"
 
-#include "../include/Expressions/FL_foot.hh"
-#include "../include/Expressions/FR_foot.hh"
-#include "../include/Expressions/RL_foot.hh"
-#include "../include/Expressions/RR_foot.hh"
-#include "../include/Expressions/J_FL.hh"
-#include "../include/Expressions/J_FR.hh"
-#include "../include/Expressions/J_RL.hh"
-#include "../include/Expressions/J_RR.hh"
-
-
 using namespace Eigen;
 // enum estimation_type {
 //     MHE = 0,
@@ -31,29 +21,30 @@ struct robot_params
     std::vector<double> p_process_std_;
     std::vector<double> accel_input_std_;
     std::vector<double> accel_bias_std_;
-
-    std::vector<double> foothold_slide_std_;
-    std::vector<double> joint_position_std_;
-    std::vector<double> joint_velocity_std_;
     std::vector<double> gyro_input_std_;
 
+    Matrix3d R_ib_;
     std::vector<double> p_ib_;
 
-    double foot_swing_std_;
+    int num_legs_;
+    int leg_odom_type_;
+    std::vector<double> joint_position_std_;
+    std::vector<double> joint_velocity_std_;
+    std::vector<double> foot_slide_std_;
+    std::vector<double> foot_swing_std_;
+    double contact_effort_theshold_;
 
     std::vector<double> p_init_std_;
     std::vector<double> v_init_std_;
-    std::vector<double> vo_p_std_;
+    std::vector<double> foot_init_std_;
+    std::vector<double> accel_bias_init_std_;
 
-    double foot_init_std_;
-    double accel_bias_init_std_;
+    std::vector<double> vo_p_std_;
 
     // estimator params
     int rate_;
     int N_;
     int est_type_;
-
-    double contact_effort_theshold_;
 
     // osqp params
     double rho_;
@@ -82,6 +73,10 @@ struct robot_store
     VectorXd joint_states_position_;
     VectorXd joint_states_velocity_;
     VectorXd joint_states_effort_;
+    VectorXd contact_;
+
+    MatrixXd p_imu_2_foot_;
+    MatrixXd J_imu_2_foot_;
 
     // VO
     double vo_time_pre_;
@@ -112,10 +107,10 @@ private:
     int N_;
     int est_type_;
     Vector3d gravity_;
-    double contact_effort_theshold_ = 150.0;
-    Matrix3d R_ib_ = Matrix3d::Identity(); // Go1 body frame is choosen to be Unitree_URDF_center frame during codegen
+    double contact_effort_theshold_ = 150.0; // if using theshold to detect contact
+    Matrix3d R_ib_ = Matrix3d::Identity();   // Go1 body frame is choosen to be Unitree_URDF_center frame during codegen
     MatrixXd p_ib_ = MatrixXd::Zero(1, 3);
-    
+
 private:
     std::shared_ptr<robot_store> robot_sub_ptr_; // robot instantaneous sensory data store
     std::shared_ptr<robot_params> params_ptr_;
@@ -141,13 +136,13 @@ private:
     std::vector<int> discrete_time_stack;
     std::vector<double> imu_time_stack_;
     std::vector<Vector3d> accel_s_input_stack_;    // Spatial acceleration stacks; haven't correct for bias;
-    std::vector<Vector3d> angular_b_input_stack_; // Body gyro stacks; haven't correct for bias;
+    std::vector<Vector3d> angular_b_input_stack_;  // Body gyro stacks; haven't correct for bias;
     std::vector<Matrix3d> R_input_rotation_stack_; // Spatial orientation stacks; R_sb, body frame in the world frame;
 
-    std::vector<MatrixXd> p_imu_2_foot_stack_;   
-    std::vector<MatrixXd> J_imu_2_foot_stack_;    
+    std::vector<MatrixXd> p_imu_2_foot_stack_;
+    std::vector<MatrixXd> J_imu_2_foot_stack_;
     std::vector<VectorXd> joint_velocity_stack_;
-    std::vector<Vector4d> contact_input_stack_;   // Contact stacks; 0, no contact, 1, contact
+    std::vector<Vector4d> contact_input_stack_; // Contact stacks; 0, no contact, 1, contact
 
     //---------------------------------------------------------------
     // VO params
@@ -166,10 +161,63 @@ private:
 
 private:
     //---------------------------------------------------------------
+    // Measurement cost&constraints term
+    // 0.5 * || v_i ||^2 _{Q_meas_}
+    // A_meas x_i - b_meas - v_i = 0
+    int leg_odom_type_;
+
+    int num_legs_;
+
+    int dim_meas_;
+
+    SparseMatrix<double> Identity_meas_;
+
+    // A_meas:
+    //   [   I  0   0;  ]
+    SparseMatrix<double> A_meas_;
+
+    // b_meas:
+    // [    R_sb * leg_imu_2_foot_b(2)  ;   ]
+    VectorXd b_meas_;
+
+    // Q_meas_:
+    //  [   R_sb * ( C_foot )^{-1} * R_sb';    ]
+    SparseMatrix<double> Q_meas_;
+    Matrix3d C_encoder_position_ = Matrix3d::Zero();
+    Matrix3d C_encoder_velocity_ = Matrix3d::Zero();
+    Matrix3d C_gyro_ = Matrix3d::Zero();
+    Matrix3d C_foot_swing_ = Matrix3d::Zero();
+    Matrix3d Q_foot_swing_ = Matrix3d::Zero();
+
+    //---------------------------------------------------------------
+    // Camera cost&constraints term
+    // A_cam_pre * x_k - A_cam_now * x_k+1 - vcam_k = b_cam_k
+    int dim_cam_;
+
+    SparseMatrix<double> Identity_cam_meas_;
+
+    // A_cam_pre:
+    //   [  I  0   0   0;];
+    SparseMatrix<double> A_cam_pre_;
+    // A_cam_now:
+    //   [  I  0   0   0;];
+    SparseMatrix<double> A_cam_now_;
+
+    // b_meas:
+    // [    - R_sb_pre * vo_realtive_p  ;   ]
+    VectorXd b_cam_;
+
+    // Q_cam_pre:
+    //  [   R_sb_pre * (Q_vo_p_)^{-1} * R_sb_pre'  ;  ]
+    SparseMatrix<double> Q_cam_;
+    Matrix3d Q_vo_p_ = Matrix3d::Zero();
+
+private:
+    //---------------------------------------------------------------
     // Dynamics cost terms
     // 0.5 * ||w_i||^2 _{Q_dyn}
     // A_dyn_ x_i - x_{i+1} - b_dyn -w_i = 0
-    int dim_state_ = 9;
+    int dim_state_;
 
     SparseMatrix<double> Identity_dyn_;
 
@@ -183,7 +231,7 @@ private:
     // [    - 0.5 * dt^2 * accel_s; ]   p_s
     // [    - dt * accel_s        ; ]   v_s
     // [    0                     ; ]   accel_bias_b
-    VectorXd b_dyn_ = VectorXd::Zero(dim_state_);
+    VectorXd b_dyn_;
 
     // Q_dyn:
     // [    Q_p    0    0;       ]
@@ -194,6 +242,7 @@ private:
     Matrix3d C_p_ = Matrix3d::Zero();
     Matrix3d C_accel_ = Matrix3d::Zero();
     Matrix3d C_foot_slide_ = Matrix3d::Zero();
+    Matrix3d Q_foot_slide_ = Matrix3d::Zero();
     Matrix3d C_accel_bias_ = Matrix3d::Zero();
     Matrix3d Q_accel_bias_ = Matrix3d::Zero(); // Gain process accel_bias
 
@@ -205,7 +254,7 @@ private:
     // [    0                       ;   ]   p_s
     // [    0                       ;   ]   v_s
     // [    0                       ;   ]   accel_bias_b
-    VectorXd x_prior_ = VectorXd::Zero(dim_state_);
+    VectorXd x_prior_;
 
     // Q_prior_0:
     //   [  Q_p_init  0          0                ;   ]
@@ -213,75 +262,23 @@ private:
     //   [  0         0          Q_accel_bias_init;   ]
     SparseMatrix<double> Q_prior_; // Gain prior
 
-private:
-    //---------------------------------------------------------------
-    // Measurement cost&constraints term
-    // 0.5 * || v_i ||^2 _{Q_meas_}
-    // A_meas x_i - b_meas - v_i = 0
-    double infinite_ = 1e6;
-
-    int num_legs_ = 4;
-
-    int dim_meas_ = 12;
-
-    SparseMatrix<double> Identity_meas_;
-
-    // A_meas:
-    //   [   I  0   0;  ]
-    SparseMatrix<double> A_meas_;
-
-    // b_meas:
-    // [    R_sb * leg_imu_2_foot_b(2)  ;   ]
-    VectorXd b_meas_ = VectorXd::Zero(dim_meas_);
-
-    // Q_meas_:
-    //  [   R_sb * ( C_foot )^{-1} * R_sb';    ]
-    SparseMatrix<double> Q_meas_; 
-    Matrix3d C_encoder_position_ = Matrix3d::Zero();
-    Matrix3d C_encoder_velocity_ = Matrix3d::Zero();
-    Matrix3d C_gyro_ = Matrix3d::Zero();
-
-    //---------------------------------------------------------------
-    // Camera cost&constraints term
-    // A_cam_pre * x_k - A_cam_now * x_k+1 - vcam_k = b_cam_k
-    int dim_cam_ = 3;
-
-    SparseMatrix<double> Identity_cam_meas_;
-
-    // A_cam_pre:
-    //   [  I  0   0   0;];
-    SparseMatrix<double> A_cam_pre_;
-    // A_cam_now:
-    //   [  I  0   0   0;];
-    SparseMatrix<double> A_cam_now_;
-
-    // b_meas:
-    // [    - R_sb_pre * vo_realtive_p  ;   ]
-    VectorXd b_cam_ = VectorXd::Zero(dim_cam_);
-
-    // Q_cam_pre:
-    //  [   R_sb_pre * (Q_vo_p_)^{-1} * R_sb_pre'  ;  ]
-    SparseMatrix<double> Q_cam_;
-    Matrix3d Q_vo_p_ = Matrix3d::Zero();
-    //---------------------------------------------------------------
-
 public:
     Matrix3d R_sb_;
 
     //---------------------------------------------------------------
     // Moving horizon estimation
-    VectorXd x_MHE_ = VectorXd::Zero(dim_state_);
+    VectorXd x_MHE_;
     Vector3d v_MHE_b_ = Vector3d::Zero();
     //---------------------------------------------------------------
     // Kalmanfilter
-    VectorXd x_KF_ = VectorXd::Zero(dim_state_);
+    VectorXd x_KF_;
     MatrixXd C_KF_;
     MatrixXd K_KF_;
+    Vector3d v_KF_b_ = Vector3d::Zero();
 
     Vector3d p_vo_accmulate_ = Vector3d::Zero();
 
 private:
-
     void InitializeMHE();
     void UpdateMHE(int discrete_time);
     void GetMeasurement(int discrete_time);

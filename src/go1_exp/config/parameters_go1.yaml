@@ -1,6 +1,6 @@
 est_sub:
   ros__parameters:
-
+  
     log_name: "go1_exp"
     # process_noise
     # C_p C_accel used for process noise
@@ -12,18 +12,25 @@ est_sub:
     # init_noise
     p_init_std: [0.001, 0.001, 0.001]
     v_init_std: [0.001, 0.001, 0.001]
-    foot_init_std: 0.001
-    accel_bias_init_std: 0.0001
-
-    # contact_noise
-    joint_position_std: [0.04, 0.04, 0.04]
-    joint_velocity_std: [0.22, 0.22, 0.22]
-    foot_slide_std: [0.00003, 0.00003, 0.00003]
-    foot_swing_std: 10000000.0   
-    contact_effort_theshold: 150.0
+    foot_init_std: [0.001, 0.001, 0.001]
+    accel_bias_init_std: [0.0001, 0.0001, 0.0001]
 
     # kin_params
+    # R_ib:
+    #   - [1.0, 0.0, 0.0]
+    #   - [0.0, 1.0, 0.0]
+    #   - [0.0, 0.0, 1.0]
     p_ib: [0.01592, 0.06659, 0.00617]
+
+    # leg_odom_noise
+    num_leg: 4
+    leg_odom_type: 0
+    joint_position_std: [0.04, 0.04, 0.04]
+    joint_velocity_std: [0.22, 0.22, 0.22]
+    foot_slide_std: [0.003, 0.003, 0.003]
+    foot_swing_std: [10000000.0, 10000000.0, 10000000.0]
+
+    contact_effort_theshold: 150.0
 
     # vo_noise
     vo_p_std:  [0.000015, 0.000015, 0.000015]
@@ -42,10 +49,10 @@ est_sub:
     # est_params
     rate: 200
     interval: 5 
-    N: 10
+    N: 20
     est_type: 0
     
-    #osqp solver params
+    # osqp solver params
     rho: 0.1
     alpha: 1.6
     delta: 0.00001

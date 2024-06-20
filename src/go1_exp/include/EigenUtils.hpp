@@ -97,5 +97,31 @@ namespace EigenUtils
             -vector(1), vector(0), 0;
     }
 
+    inline void QuaternionToEuler(Quaterniond quaternion, Vector3d &euler)
+    {
+        double roll, pitch, yaw = 0.0;
+        double qw = quaternion.w();
+        double qx = quaternion.x();
+        double qy = quaternion.y();
+        double qz = quaternion.z();
+        // roll (x-axis rotation)
+        double sinr_cosp = 2 * (qw * qx + qy * qz);
+        double cosr_cosp = 1 - 2 * (qx * qx + qy * qy);
+        roll = atan2(sinr_cosp, cosr_cosp);
+        // pitch (y-axis rotation)
+        double sinp = 2 * (qw * qy - qz * qx);
+        if (abs(sinp) >= 1)
+            pitch = copysign(M_PI / 2, sinp); // Use M_PI for pi in C++
+        else
+            pitch = asin(sinp);
+        // yaw (z-axis rotation)
+        double siny_cosp = 2 * (qw * qz + qx * qy);
+        double cosy_cosp = 1 - 2 * (qy * qy + qz * qz);
+        yaw = atan2(siny_cosp, cosy_cosp);
+        euler(0) = roll;
+        euler(1) = pitch;
+        euler(2) = yaw;
+    }
+
 }
 #endif // EIGEN_UTILS_H
