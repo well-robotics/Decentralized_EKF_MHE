@@ -23,7 +23,7 @@ struct robot_params
     std::vector<double> accel_bias_std_;
     std::vector<double> gyro_input_std_;
 
-    Matrix3d R_ib_;
+    std::vector<double> quaternion_ib_;
     std::vector<double> p_ib_;
 
     int num_legs_;
@@ -108,7 +108,7 @@ private:
     int est_type_;
     Vector3d gravity_;
     double contact_effort_theshold_ = 150.0; // if using theshold to detect contact
-    Matrix3d R_ib_ = Matrix3d::Identity();   // Go1 body frame is choosen to be Unitree_URDF_center frame during codegen
+    MatrixXd R_ib_ = Matrix3d::Identity(3,3);   // Go1 body frame is choosen to be Unitree_URDF_center frame during codegen
     MatrixXd p_ib_ = MatrixXd::Zero(1, 3);
 
 private:

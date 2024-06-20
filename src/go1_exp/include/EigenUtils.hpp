@@ -123,5 +123,26 @@ namespace EigenUtils
         euler(2) = yaw;
     }
 
+    inline void VectorToMatrixXd(const std::vector<std::vector<double>> &vec, MatrixXd &mat)
+    {
+        if (vec.empty() || vec[0].empty())
+        {
+            throw std::invalid_argument("Input vector is empty or improperly formed.");
+        }
+
+        size_t rows = vec.size();
+        size_t cols = vec[0].size();
+
+        mat = MatrixXd::Zero(rows, cols);
+
+        for (size_t i = 0; i < rows; ++i)
+        {
+            for (size_t j = 0; j < cols; ++j)
+            {
+                mat(i, j) = vec[i][j];
+            }
+        }
+    }
+
 }
 #endif // EIGEN_UTILS_H

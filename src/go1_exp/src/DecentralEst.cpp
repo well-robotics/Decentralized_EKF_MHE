@@ -25,7 +25,13 @@ void DecentralizedEstimation::initialize(std::shared_ptr<robot_store> sub, std::
 
     contact_effort_theshold_ = params_ptr_->contact_effort_theshold_;
     gravity_ << 0, 0, -9.81;
-    R_ib_ = params_ptr_->R_ib_;
+
+    Quaterniond q_ib;
+    q_ib.w() = params_ptr_->quaternion_ib_[0];
+    q_ib.x() = params_ptr_->quaternion_ib_[1];
+    q_ib.y() = params_ptr_->quaternion_ib_[2];
+    q_ib.z() = params_ptr_->quaternion_ib_[3];
+    R_ib_ = q_ib.toRotationMatrix();
     p_ib_ << params_ptr_->p_ib_[0], params_ptr_->p_ib_[1], params_ptr_->p_ib_[2];
 
     //---------------------------------------------------------------

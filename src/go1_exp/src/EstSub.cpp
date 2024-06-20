@@ -29,10 +29,6 @@ namespace robotSub
         vo_sub = create_subscription<orbslam3_msgs::msg::VoRealtiveTransform>("orb/vo",
                                                                               10,
                                                                               std::bind(&robotSub::vo_callback, this, std::placeholders::_1));
-        vo_p_sub = create_subscription<geometry_msgs::msg::PoseStamped>("orb/pos",
-                                                                        10,
-                                                                        std::bind(&robotSub::vo_p_callback, this, std::placeholders::_1));
-
         // Decentralized Orientation
         orien_filter_sub = create_subscription<sensor_msgs::msg::Imu>("imu/filter",
                                                                       10,
@@ -43,7 +39,7 @@ namespace robotSub
                                                                          10,
                                                                          std::bind(&robotSub::mocap_callback, this, std::placeholders::_1));
 
-        time_0_ = static_cast<double>(rclcpp::Clock().now().nanoseconds()) / 1e9;
+        time_init_ = static_cast<double>(rclcpp::Clock().now().nanoseconds()) / 1e9;
     }
 
     robotSub::~robotSub()
@@ -54,17 +50,17 @@ namespace robotSub
     {
 
         rclcpp::Time imu_time = rclcpp::Clock().now();
-        robot_store_->imu_time_ = static_cast<double>(imu_time.nanoseconds()) / 1e9 - time_0_; // Correctly obtaining the timestamp in seconds as a double
+        robot_store_->imu_time_ = static_cast<double>(imu_time.nanoseconds()) / 1e9 - time_init_; // Correctly obtaining the timestamp in seconds as a double
 
         robot_store_->accel_b_(0) = msg->linear_acceleration.x;
         robot_store_->accel_b_(1) = msg->linear_acceleration.y;
         robot_store_->accel_b_(2) = msg->linear_acceleration.z;
-        
+
         robot_store_->angular_b_(0) = msg->angular_velocity.x;
         robot_store_->angular_b_(1) = msg->angular_velocity.y;
         robot_store_->angular_b_(2) = msg->angular_velocity.z;
 
-        msg_num++;
+        msg_num_++;
     }
 
     void robotSub::lo_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
@@ -87,6 +83,7 @@ namespace robotSub
         MatrixXd J_imu_2_foot_ = MatrixXd::Zero(12, 3);
         MatrixXd p_ib = MatrixXd::Zero(1, 3);
         p_ib << robot_params_->p_ib_[0], robot_params_->p_ib_[1], robot_params_->p_ib_[2];
+        
         // Foot order: FR, FL, RR, RL; For both hardware and kinematics lib
         // Joints Order: hip, thig, calf, foot(fixed 0); For both hardware and kinematics lib
         MatrixXd p_FR_foot = MatrixXd::Zero(1, 3);
@@ -133,6 +130,30 @@ namespace robotSub
         robot_store_->contact_ = contact;
     }
 
+    void robotSub::vo_callback(const orbslam3_msgs::msg::VoRealtiveTransform::SharedPtr msg)
+    {
+        // sub for the vo_pose_body_pre_2_body,
+        robot_store_->vo_new_ = true;
+        robot_store_->vo_time_pre_ = static_cast<double>(msg->header_pre.stamp.sec) +
+                                     static_cast<double>(msg->header_pre.stamp.nanosec) / 1e9 - time_init_; // image_pre time stamp
+        robot_store_->vo_time_now_ = static_cast<double>(msg->header.stamp.sec) +
+                                     static_cast<double>(msg->header.stamp.nanosec) / 1e9 - time_init_; // image_pre time stamp
+        robot_store_->vo_p_body_pre_2_body_(0) = msg->x_relative;
+        robot_store_->vo_p_body_pre_2_body_(1) = msg->y_relative;
+        robot_store_->vo_p_body_pre_2_body_(2) = msg->z_relative;
+    }
+
+    void robotSub::orien_filter_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
+    {
+
+        robot_store_->quaternion_.x() = msg->orientation.x;
+        robot_store_->quaternion_.y() = msg->orientation.y;
+        robot_store_->quaternion_.z() = msg->orientation.z;
+        robot_store_->quaternion_.w() = msg->orientation.w;
+
+        EigenUtils::QuaternionToEuler(robot_store_->quaternion_, filter_euler_);
+    }
+
     void robotSub::mocap_callback(const optitrack_broadcast::msg::Mocap::SharedPtr msg)
     {
 
@@ -158,61 +179,15 @@ namespace robotSub
 
         EigenUtils::QuaternionToEuler(mocap_quaternion_, gt_euler_);
 
-        init_mocap_ = true;
-
         gt_p_ = robot_store_->gt_p_ - gt_p_offset_;
         gt_v_b_ = mocap_quaternion_.normalized().toRotationMatrix() * robot_store_->gt_v_s_;
-    }
-
-    void robotSub::orien_filter_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
-    {
-
-        robot_store_->quaternion_.x() = msg->orientation.x;
-        robot_store_->quaternion_.y() = msg->orientation.y;
-        robot_store_->quaternion_.z() = msg->orientation.z;
-        robot_store_->quaternion_.w() = msg->orientation.w;
-
-        EigenUtils::QuaternionToEuler(robot_store_->quaternion_, filter_euler_);
-    }
-
-    void robotSub::vo_callback(const orbslam3_msgs::msg::VoRealtiveTransform::SharedPtr msg)
-    {
-        // sub for the vo_pose_body_pre_2_body,
-        robot_store_->vo_new_ = true;
-        robot_store_->vo_time_pre_ = static_cast<double>(msg->header_pre.stamp.sec) +
-                                     static_cast<double>(msg->header_pre.stamp.nanosec) / 1e9 - time_0_; // image_pre time stamp
-        robot_store_->vo_time_now_ = static_cast<double>(msg->header.stamp.sec) +
-                                     static_cast<double>(msg->header.stamp.nanosec) / 1e9 - time_0_; // image_pre time stamp
-        robot_store_->vo_p_body_pre_2_body_(0) = msg->x_relative;
-        robot_store_->vo_p_body_pre_2_body_(1) = msg->y_relative;
-        robot_store_->vo_p_body_pre_2_body_(2) = msg->z_relative;
-    }
-
-    void robotSub::vo_p_callback(const geometry_msgs::msg::PoseStamped::SharedPtr msg)
-    {
-        vo_p_(0) = msg->pose.position.x;
-        vo_p_(1) = msg->pose.position.y;
-        vo_p_(2) = msg->pose.position.z;
-
-        vo_quaternion_.x() = msg->pose.orientation.x;
-        vo_quaternion_.y() = msg->pose.orientation.y;
-        vo_quaternion_.z() = msg->pose.orientation.z;
-        vo_quaternion_.w() = msg->pose.orientation.w;
-
-        vo_p_ = vo_quaternion_offset_ * vo_p_;
-
-        if (init_mocap_ && !init_vo_)
-        {
-            vo_quaternion_offset_ = mocap_quaternion_ * vo_quaternion_.inverse(); // R_IMU_correct =  (R_Mocap * R_IMU^T) * R_IMU
-            init_vo_ = true;
-        }
     }
 
     void robotSub::timerCallback()
     {
         auto start_callback = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
 
-        if (msg_num >= 10)
+        if (msg_num_ >= 10)
         {
 
             if (discrete_time == 0)
@@ -304,6 +279,8 @@ namespace robotSub
         this->declare_parameter("foot_slide_std", std::vector<double>{0.001, 0.001, 0.001});
         this->declare_parameter("foot_swing_std", std::vector<double>{10000.0, 10000.0, 10000.0});
         this->declare_parameter("contact_effort_theshold", 150.0);
+
+        this->declare_parameter("quaternion_ib", std::vector<double>{1.0, 0.0, 0.0, 0.0});
         this->declare_parameter("p_ib", std::vector<double>{0.0, 0.0, 0.0});
 
         robot_params_->num_legs_ = this->get_parameter("num_leg").as_int();
@@ -313,6 +290,8 @@ namespace robotSub
         robot_params_->foot_slide_std_ = this->get_parameter("foot_slide_std").as_double_array();
         robot_params_->foot_swing_std_ = this->get_parameter("foot_swing_std").as_double_array();
         robot_params_->contact_effort_theshold_ = this->get_parameter("contact_effort_theshold").as_double();
+
+        robot_params_->quaternion_ib_ = this->get_parameter("quaternion_ib").as_double_array();
         robot_params_->p_ib_ = this->get_parameter("p_ib").as_double_array();
 
         this->declare_parameter("vo_p_std", std::vector<double>{0.001, 0.001, 0.001});

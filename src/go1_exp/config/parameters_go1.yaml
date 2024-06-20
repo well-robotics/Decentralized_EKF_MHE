@@ -16,10 +16,7 @@ est_sub:
     accel_bias_init_std: [0.0001, 0.0001, 0.0001]
 
     # kin_params
-    # R_ib:
-    #   - [1.0, 0.0, 0.0]
-    #   - [0.0, 1.0, 0.0]
-    #   - [0.0, 0.0, 1.0]
+    quaternion_ib: [0, 0, 0, 1]
     p_ib: [0.01592, 0.06659, 0.00617]
 
     # leg_odom_noise
