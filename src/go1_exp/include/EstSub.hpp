@@ -3,7 +3,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-// ros msg 
+// ros msg
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <custom_msgs/msg/vo_realtive_transform.hpp>
@@ -35,34 +35,35 @@ namespace robotSub
 
     class robotSub : public rclcpp::Node
     {
-    private:
-        rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
-        rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr lo_sub;
+    public:
+        robotSub(const std::string &name);
+        ~robotSub();
 
-        // Sparsly integrated VO
-        rclcpp::Subscription<custom_msgs::msg::VoRealtiveTransform>::SharedPtr vo_sub;
+    private:
+        rclcpp::TimerBase::SharedPtr timer_;
+        void timerCallback();
 
         // Decentralized Orientation
         rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr orien_filter_sub;
+        void orien_filter_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
+        Vector3d filter_euler_ = Vector3d::Zero();
 
-        // Ground Truth
-        rclcpp::Subscription<optitrack_broadcast::msg::Mocap>::SharedPtr mocap_sub;
-        // rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr mocap_sub;
-
-        rclcpp::TimerBase::SharedPtr timer_;
-
-    private:
         void paramsWrapper();
 
-        DecentralizedEstimation mhe;
+    private:
+        Data_Logger logger;
+        void init_logging();
 
+    private:
+        DecentralizedEstimation mhe;
         std::shared_ptr<robot_store> robot_store_;
         std::shared_ptr<robot_params> robot_params_;
 
+        int est_type_;          // 0: mhe, 1: KF
+
         double time_init_ = 0;
-        int discrete_time = 0; // discrete time of the estimation
-        int est_type_;         // 0: mhe, 1: KF
-        int msg_num_ = 0;
+        int discrete_time_ = 0; // discrete time of the estimation
+        int imu_msg_num_ = 0;
 
         // inital offset of mocap
         Vector3d gt_p_offset_;
@@ -74,27 +75,6 @@ namespace robotSub
 
         Quaterniond mocap_quaternion_;
         Vector3d gt_euler_ = Vector3d::Zero(); // [roll, pitch, yaw]
-        
-        Vector3d filter_euler_ = Vector3d::Zero();
-
-    public:
-        robotSub(const std::string &name);
-        ~robotSub();
-        void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
-        void lo_callback(const sensor_msgs::msg::JointState::SharedPtr msg);
-        void vo_callback(const custom_msgs::msg::VoRealtiveTransform::SharedPtr msg); // Sparsly integrated VO
-
-        // Decentralized Orientation
-        void orien_filter_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
-
-        // Ground Truth
-        void mocap_callback(const optitrack_broadcast::msg::Mocap::SharedPtr msg);
-
-        void timerCallback();
-
-    public:
-        Data_Logger logger;
-        void init_logging();
     };
 }
 #endif // ROBOT_SUB_HPP
