@@ -3,15 +3,14 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-// Ros msg header
+// ros msg 
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
+#include <custom_msgs/msg/vo_realtive_transform.hpp>
 
-#include <orbslam3_msgs/msg/vo_realtive_transform.hpp>
-
+#include <optitrack_broadcast/msg/mocap.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include "geometry_msgs/msg/pose_stamped.hpp"
-#include <optitrack_broadcast/msg/mocap.hpp>
 
 // CPP header(non ros)
 #include <Eigen/Sparse>
@@ -41,14 +40,14 @@ namespace robotSub
         rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr lo_sub;
 
         // Sparsly integrated VO
-        rclcpp::Subscription<orbslam3_msgs::msg::VoRealtiveTransform>::SharedPtr vo_sub;
+        rclcpp::Subscription<custom_msgs::msg::VoRealtiveTransform>::SharedPtr vo_sub;
 
         // Decentralized Orientation
         rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr orien_filter_sub;
 
         // Ground Truth
-        // rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr mocap_sub;
         rclcpp::Subscription<optitrack_broadcast::msg::Mocap>::SharedPtr mocap_sub;
+        // rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr mocap_sub;
 
         rclcpp::TimerBase::SharedPtr timer_;
 
@@ -83,7 +82,7 @@ namespace robotSub
         ~robotSub();
         void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
         void lo_callback(const sensor_msgs::msg::JointState::SharedPtr msg);
-        void vo_callback(const orbslam3_msgs::msg::VoRealtiveTransform::SharedPtr msg); // Sparsly integrated VO
+        void vo_callback(const custom_msgs::msg::VoRealtiveTransform::SharedPtr msg); // Sparsly integrated VO
 
         // Decentralized Orientation
         void orien_filter_callback(const sensor_msgs::msg::Imu::SharedPtr msg);

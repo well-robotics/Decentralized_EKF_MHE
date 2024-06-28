@@ -13,7 +13,7 @@ find_package(Eigen3 REQUIRED)
 find_package(OsqpEigen REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
-find_package(orbslam3_msgs REQUIRED)
+find_package(custom_msgs REQUIRED)
 find_package(optitrack_broadcast REQUIRED)
 
 # aux_source_directory(. DIR_SRCS)
@@ -30,8 +30,7 @@ src/Expressions/J_RL.cc
 src/Expressions/J_RR.cc
 )
 
-add_library(spline src/spline/BSpline_simple.cpp
-                   src/spline/Bezier_simple.cpp)
+add_library(spline src/Spline/Bezier_simple.cpp)
 
 add_library(MheSrb src/MheSrb.cpp)
 target_link_libraries(MheSrb OsqpEigen::OsqpEigen)
@@ -42,7 +41,7 @@ target_link_libraries(DecentralEst OsqpEigen::OsqpEigen MheSrb spline code_gen)
 # realtime_est
 add_library(EstSub src/EstSub.cpp)
 target_link_libraries(EstSub DecentralEst)
-ament_target_dependencies(EstSub rclcpp orbslam3_msgs sensor_msgs geometry_msgs optitrack_broadcast) 
+ament_target_dependencies(EstSub rclcpp custom_msgs sensor_msgs geometry_msgs optitrack_broadcast) 
 
 add_executable(sub src/EstSubNode.cpp)
 target_link_libraries(sub EstSub)

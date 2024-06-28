@@ -7,7 +7,7 @@
 
 #include "../include/MheSrb.hpp"
 #include "../include/EigenUtils.hpp"
-#include "../include/spline/Bezier_simple.hpp"
+#include "../include/Spline/Bezier_simple.hpp"
 
 using namespace Eigen;
 // enum estimation_type {
@@ -107,8 +107,8 @@ private:
     int N_;
     int est_type_;
     Vector3d gravity_;
-    double contact_effort_theshold_ = 150.0; // if using theshold to detect contact
-    MatrixXd R_ib_ = Matrix3d::Identity(3,3);   // Go1 body frame is choosen to be Unitree_URDF_center frame during codegen
+    double contact_effort_theshold_ = 150.0;   // if using theshold to detect contact
+    MatrixXd R_ib_ = Matrix3d::Identity(3, 3); // Go1 body frame is choosen to be Unitree_URDF_center frame during codegen
     MatrixXd p_ib_ = MatrixXd::Zero(1, 3);
 
 private:
@@ -161,27 +161,32 @@ private:
 
 private:
     //---------------------------------------------------------------
-    // Measurement cost&constraints term
+    // LO Measurement cost&constraints term
     // 0.5 * || v_i ||^2 _{Q_meas_}
     // A_meas x_i - b_meas - v_i = 0
+    int dim_meas_;
+
     int leg_odom_type_;
 
     int num_legs_;
 
-    int dim_meas_;
-
     SparseMatrix<double> Identity_meas_;
 
-    // A_meas:
-    //   [   I  0   0;  ]
+    // A_meas_:
+    // foot velocity: [  0   I   0;  ]
+    // foot_position: [  -I   0   0  I;  ]
     SparseMatrix<double> A_meas_;
 
-    // b_meas:
-    // [    R_sb * leg_imu_2_foot_b(2)  ;   ]
+    // b_meas_:
+    // foot_position: [  R_sb * fk   ];
+    // foot_velocity: [  -R_sb * J * dq - R_sb omega.cross(fk)   ];
     VectorXd b_meas_;
 
     // Q_meas_:
-    //  [   R_sb * ( C_foot )^{-1} * R_sb';    ]
+    //  foot_position: [   R_sb * (J * C_encoder_position_^{-1} * J')^{-1} * R_sb' ];
+    //  foot_velocity: [   R_sb * ([-J, -omega^x * J, fk^x] *
+    //                          [C_encoder_position_,C_encoder_velocity_,C_gyro_] *
+    //                          [-J, -omega^x * J, fk^x]')^{-1} * R_sb' ];
     SparseMatrix<double> Q_meas_;
     Matrix3d C_encoder_position_ = Matrix3d::Zero();
     Matrix3d C_encoder_velocity_ = Matrix3d::Zero();
@@ -191,6 +196,7 @@ private:
 
     //---------------------------------------------------------------
     // Camera cost&constraints term
+    // 0.5 * || A_cam_pre_ * x_{T_pre} - A_cam_now_ * x_T - b_cam_ ||^2_{Q_cam_}
     // A_cam_pre * x_k - A_cam_now * x_k+1 - vcam_k = b_cam_k
     int dim_cam_;
 
@@ -222,29 +228,34 @@ private:
     SparseMatrix<double> Identity_dyn_;
 
     // A_dyn_:
-    // [    I   dt* I   - 0.5 * dt^2 * R_sb;  ]
-    // [    0   I       - dt * R_sb        ;  ]
-    // [    0   0       I                  ;  ]
+    // [    I   dt* I   - 0.5 * dt^2 * R_sb     0;  ]
+    // [    0   I       - dt * R_sb             0;  ]
+    // [    0   0       I                       0;  ]
+    // [    0   0       0                       I;  ] foot_position
     SparseMatrix<double> A_dyn_;
 
-    // b_dyn:
+    // b_dyn_:
     // [    - 0.5 * dt^2 * accel_s; ]   p_s
     // [    - dt * accel_s        ; ]   v_s
     // [    0                     ; ]   accel_bias_b
+    // [    0                     ; ]   foot_position
     VectorXd b_dyn_;
 
-    // Q_dyn:
-    // [    Q_p    0    0;       ]
-    // [    0      Q_v  0;       ]
-    // [    0      0    Q_accel_bias; ]
-    SparseMatrix<double> Q_dyn_; // Q: gains matrix
+    // Q_dyn_:
+    // (G_dyn * diag[C_p_, C_accel_, C_accel_bias_, C_foot_] * G_dyn').inverse()
+    // G_dyn:
+    // [  R_sb * dt          -0.5 * R_sb *dt^2   0;         0;  ]
+    // [  0                  -R_sb * dt          0;         0;  ]
+    // [  0                  0                   I * dt;    0;  ]
+    // [  0                  0                   0;         R_sb * dt;  ] foot_position
+    SparseMatrix<double> Q_dyn_; 
 
     Matrix3d C_p_ = Matrix3d::Zero();
     Matrix3d C_accel_ = Matrix3d::Zero();
     Matrix3d C_foot_slide_ = Matrix3d::Zero();
     Matrix3d Q_foot_slide_ = Matrix3d::Zero();
     Matrix3d C_accel_bias_ = Matrix3d::Zero();
-    Matrix3d Q_accel_bias_ = Matrix3d::Zero(); // Gain process accel_bias
+    Matrix3d Q_accel_bias_ = Matrix3d::Zero(); 
 
     //---------------------------------------------------------------
     // Prior cost term
@@ -254,16 +265,19 @@ private:
     // [    0                       ;   ]   p_s
     // [    0                       ;   ]   v_s
     // [    0                       ;   ]   accel_bias_b
+    // [    R_sb * fk               ;   ]   foot_position
     VectorXd x_prior_;
 
-    // Q_prior_0:
-    //   [  Q_p_init  0          0                ;   ]
-    //   [  0         Q_v_init   0                ;   ]
-    //   [  0         0          Q_accel_bias_init;   ]
+    // Q_prior_:
+    //   [  Q_p_init  0          0                  0;   ]
+    //   [  0         Q_v_init   0                  0;   ]
+    //   [  0         0          Q_accel_bias_init  0;   ]
+    //   [  0         0          0                  Q_foot_init;   ]  foot_position
     SparseMatrix<double> Q_prior_; // Gain prior
 
 public:
     Matrix3d R_sb_;
+    Vector3d p_vo_accmulate_ = Vector3d::Zero();
 
     //---------------------------------------------------------------
     // Moving horizon estimation
@@ -275,8 +289,6 @@ public:
     MatrixXd C_KF_;
     MatrixXd K_KF_;
     Vector3d v_KF_b_ = Vector3d::Zero();
-
-    Vector3d p_vo_accmulate_ = Vector3d::Zero();
 
 private:
     void InitializeMHE();
@@ -290,7 +302,6 @@ private:
 
     void StdVec2CovMat(const std::vector<double> &std, Matrix3d &Cov);   // Wrapper convert Vector3d std to Diag Covariance Matrix
     void StdVec2GainMat(const std::vector<double> &std, Matrix3d &Gain); // Wrapper convert Vector3d std to Diag Gain Matrix
-    void Log2txt(const MatrixXd matrix, std::string filename);
     void tic(std::string str, int mode = 0);
     void toc(std::string str);
 };

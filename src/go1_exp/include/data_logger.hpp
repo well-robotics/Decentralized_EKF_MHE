@@ -22,6 +22,7 @@ using namespace Eigen;
 // that's it, you will get to files in the folder you selected
 // one contains the name, types and dimension of all variables,
 // one has all the data in binary format.
+
 enum data_types
 {
     double_,

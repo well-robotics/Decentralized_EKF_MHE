@@ -40,7 +40,7 @@ void MHEproblem::addVariable(std::string VarName_, int VarSize_)
     nVar = nVarEnd - nVarStart;               // nVar is the current length of the interval
 }
 
-// ||Ax - b||_Q
+// 0.5 * ||Ax - b||_Q
 // Add the cost term to Cost_new_regs
 void MHEproblem::addCost(std::string CostName_, VectorXd b, SparseMatrix<double> Q)
 {
@@ -288,8 +288,7 @@ bool MHEproblem::initQP(int T)
     osqp.data()->setLinearConstraintsMatrix(Aconstrsparse);
     osqp.data()->setLowerBound(lb_all); // only accepting dense vector
     osqp.data()->setUpperBound(ub_all); // only accepting dense vector
-    // std::cout << MatrixXd(Hsparse) << std::endl;
-    // std::cout << MatrixXd(Aconstrsparse) << std::endl;
+
 
     ifinit = osqp.initSolver();
 
@@ -324,35 +323,9 @@ bool MHEproblem::initQP(int T)
     //     ifinit = true;
     // }
 
-    // debug
-    // ------------------------------------------------
-    // std::cout << "nConstraints: " << nConstraints << std::endl;
-    // std::cout << "nCost: " << nCost << std::endl;
-    // std::cout << "nVar: " << nVar << std::endl;
-
-    // debug
-    // std::cout << "H: " << Hsparse.rows() << "||" << Hsparse.cols() << std::endl;
-    // std::cout << "H: " << MatrixXd(Hsparse) << std::endl;
-
-    // std::cout << "g: " << g << std::endl;
-    // // std::cout << "A:" << MatrixXd(Aconstrsparse) << std::endl;
-    // std::cout << "lb: " << lb_all << std::endl;
-    // std::cout << "ub: " << ub_all << std::endl;
-    // MatrixXd g_mat = g;
-    // MatrixXd lb_mat = lb_all;
-    // MatrixXd ub_mat = ub_all;
-    // Log2txt(g_mat, "g");
-    // Log2txt(lb_mat, "lb");
-    // Log2txt(ub_mat, "ub");
-
-    // Log2txt(MatrixXd(Hsparse), "H");
-    // Log2txt(MatrixXd(Aconstrsparse), "A");
     // // Check rank for unconstrained problem
     // JacobiSVD<MatrixXd> svd(MatrixXd(Hsparse));
     // std::cout << "rank: " << svd.rank() << std::endl;
-    // MatrixXd H = MatrixXd(Hmhe);
-    // VectorXd x_inv = -H.inverse() * gmhe;
-    // std::cout << "inv" << x_inv << std::endl;
 
     // SelfAdjointEigenSolver<MatrixXd> solver(H);
     // VectorXd eigen = solver.eigenvalues();
@@ -442,30 +415,6 @@ bool MHEproblem::updateQP(int T)
     Aconstrsparse_new.setZero();
 
     int row_new = 0;
-    // for (const auto &eachconstr : LinearConstraint_new_regs)
-    // {
-    //     std::cout << eachconstr.first << std::endl;
-    //     // if (eachconstr.first == VO_measurement_string)
-    //     // {
-    //     //     LinearConstraint_regs.insert({VO_measurement_string, nConstraints - nConstraints_new + row_new});
-    //     // }
-    //     LinearConstraint_regs.insert({eachconstr.first, eachconstr.second});
-
-    //     VectorXd lb_constr = eachconstr.second.lb;
-    //     VectorXd ub_constr = eachconstr.second.ub;
-    //     int constr_size = lb_constr.size();
-    //     lb_all.segment(nConstraints - nConstraints_new + row_new, constr_size) << lb_constr;
-    //     ub_all.segment(nConstraints - nConstraints_new + row_new, constr_size) << ub_constr;
-
-    //     for (const auto &constr_Ax : eachconstr.second.depVarMap)
-    //     {
-    //         std::string var_name = constr_Ax.first;
-    //         SparseMatrix<double> A_constr = constr_Ax.second;
-
-    //         EigenUtils::SparseMatrixBlockAsign(Aconstrsparse_new, nConstraints - nConstraints_new + row_new, var_idx_regs[var_name] - nVarStart, A_constr);
-    //     }
-    //     row_new += constr_size;
-    // }
 
     // Apending constraints w.r.p to the order they are created
     for (const std::string &constr_name : LinearConstraint_new_name_vec)
@@ -810,14 +759,6 @@ void MHEproblem::resetQP()
     Q_cost_Matrices.clear();
 }
 
-void MHEproblem::Log2txt(const MatrixXd matrix, std::string filename)
-{
-    IOFormat CleanFmt(20, 0, ", ", "\n", "[", "]");
-    std::string path = "/home/jkang/mhe_ros/logtxt/";
-    std::ofstream outfile(path + filename + ".txt");
-    outfile << matrix.format(CleanFmt);
-    outfile.close();
-}
 
 void MHEproblem::tic(std::string str, int mode)
 {

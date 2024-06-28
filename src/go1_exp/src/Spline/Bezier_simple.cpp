@@ -1,15 +1,15 @@
-#include <spline/BSpline_simple.hpp>
+#include <Spline/Bezier_simple.hpp>
 #include <iostream>
 
-BSpline::BSpline()
+Bezier::Bezier()
 {
 }
 
-BSpline::~BSpline()
+Bezier::~Bezier()
 {
 }
 
-void BSpline::add_way_point(const Vector3d &point, double t_end)
+void Bezier::add_way_point(const Vector3d &point, double t_end)
 {
 	_way_points.push_back(point);
 	_way_points_time.push_back(t_end);
@@ -26,7 +26,7 @@ void BSpline::add_way_point(const Vector3d &point, double t_end)
 	t_interval_ = _way_points_time.back() - _way_points_time.front();
 }
 
-void BSpline::interpolate_waypoint()
+void Bezier::interpolate_waypoint()
 {
 	_distances.clear();
 	_nodes.clear();
@@ -51,35 +51,32 @@ void BSpline::interpolate_waypoint()
 
 		_distances.push_back(node_diff);
 		_nodes.push_back(node);
-		std::cout << _way_points_time.front() << "||" << _way_points_time.back() << std::endl;
-		std::cout << u_interpolate_start << "||" << u << "||" << node << std::endl;
 
 		diff_VectorXd.segment<3>(0 + i * 3) << node_diff;
 		nodes_VectorXd.segment<3>(0 + i * 3) << node;
 	}
 }
 
-void BSpline::set_interval(double t_interpolate_start, int interpolate_num, double dt)
+void Bezier::set_interval(double t_interpolate_start, int interpolate_num, double dt)
 {
 	t_interpolate_start_ = t_interpolate_start;
-	std::cout << "t_interval_" << (double)t_interval_ << "N" << dt << std::endl;
 
 	u_incremental_ = dt / (double)t_interval_;
-	std::cout << "u_incremental_" << u_incremental_ << std::endl;
 	interpolate_num_ = interpolate_num;
 	nodes_VectorXd.resize(interpolate_num * 3, 1);
 	nodes_VectorXd.setZero();
 	diff_VectorXd.resize(interpolate_num * 3, 1);
 	diff_VectorXd.setZero();
+	node_pre.setZero();
 }
 
-Vector3d BSpline::interpolate(double u, const Vector3d &P0, const Vector3d &P1, const Vector3d &P2, const Vector3d &P3)
+Vector3d Bezier::interpolate(double u, const Vector3d &P0, const Vector3d &P1, const Vector3d &P2, const Vector3d &P3)
 {
 	Vector3d point = Vector3d::Zero();
-	point = u * u * u * ((-1) * P0 + 3 * P1 - 3 * P2 + P3) / 6;
-	point += u * u * (3 * P0 - 6 * P1 + 3 * P2) / 6;
-	point += u * ((-3) * P0 + 3 * P2) / 6;
-	point += (P0 + 4 * P1 + P2) / 6;
+	point = u * u * u * ((-1) * P0 + 3 * P1 - 3 * P2 + P3);
+	point += u * u * (3 * P0 - 6 * P1 + 3 * P2);
+	point += u * ((-3) * P0 + 3 * P1);
+	point += P0;
 
 	return point;
 }

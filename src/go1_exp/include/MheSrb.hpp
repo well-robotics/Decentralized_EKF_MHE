@@ -184,8 +184,6 @@ private:
 
     // SparseLU<SparseMatrix<double>> solver_inv;
 
-    void Log2txt(const MatrixXd matrix, std::string filename);
-
     void schurComplement(SparseMatrix<double> &S_out, VectorXd &v_out, const SparseMatrix<double> &A, const SparseMatrix<double> &B, const SparseMatrix<double> &C, const SparseMatrix<double> &D, const VectorXd &u, const VectorXd &v);
 
     SparseMatrix<double> M_p_next;
