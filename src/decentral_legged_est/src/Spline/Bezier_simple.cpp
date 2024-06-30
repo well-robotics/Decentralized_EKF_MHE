@@ -1,4 +1,4 @@
-#include <Spline/Bezier_simple.hpp>
+#include <decentral_legged_est/Spline/Bezier_simple.hpp>
 #include <iostream>
 
 Bezier::Bezier()

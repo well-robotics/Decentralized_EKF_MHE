@@ -1,4 +1,4 @@
-#include "../include/DecentralEst.hpp"
+#include "decentral_legged_est/DecentralEst.hpp"
 #include <fstream>
 
 DecentralizedEstimation::DecentralizedEstimation()

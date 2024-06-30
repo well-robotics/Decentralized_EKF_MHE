@@ -5,7 +5,7 @@
 #include <OsqpEigen/OsqpEigen.h>
 #include <Eigen/Sparse>
 #include <chrono>
-#include "../include/EigenUtils.hpp"
+#include "decentral_legged_est/EigenUtils.hpp"
 
 using namespace Eigen;
 

@@ -1,4 +1,4 @@
-#include "EstSub.hpp"
+#include "decentral_legged_est/EstSub.hpp"
 
 using namespace Eigen;
 
@@ -11,13 +11,17 @@ namespace robotSub
         robot_params_ = std::make_shared<robot_params>(); // params struc ptr
 
         paramsWrapper();
-        est_type_ = robot_params_->est_type_;
         int timer_interval_ = this->get_parameter("estimation.interval").as_int();
 
+        // Decentralized Orientation
         orien_filter_sub = create_subscription<sensor_msgs::msg::Imu>("imu/filter",
                                                                       10,
                                                                       std::bind(&robotSub::orien_filter_callback, this, std::placeholders::_1));
-        
+        // Sparsly integrated VO
+        vo_sub = create_subscription<custom_msgs::msg::VoRealtiveTransform>("orb/vo",
+                                                                            10,
+                                                                            std::bind(&robotSub::vo_callback, this, std::placeholders::_1));
+
         timer_ = create_wall_timer(std::chrono::milliseconds(timer_interval_), std::bind(&robotSub::timerCallback, this));
 
         time_init_ = static_cast<double>(rclcpp::Clock().now().nanoseconds()) / 1e9;
@@ -36,6 +40,19 @@ namespace robotSub
         robot_store_->quaternion_.w() = msg->orientation.w;
 
         EigenUtils::QuaternionToEuler(robot_store_->quaternion_, filter_euler_);
+    }
+    
+    void robotSub::vo_callback(const custom_msgs::msg::VoRealtiveTransform::SharedPtr msg)
+    {
+        // Sparsly integrated VO callback; vo_p_body_pre_2_body: relative translation from body_pre to body
+        robot_store_->vo_new_ = true;
+        robot_store_->vo_time_pre_ = static_cast<double>(msg->header_pre.stamp.sec) +
+                                     static_cast<double>(msg->header_pre.stamp.nanosec) / 1e9 - time_init_; // image_pre time stamp
+        robot_store_->vo_time_now_ = static_cast<double>(msg->header.stamp.sec) +
+                                     static_cast<double>(msg->header.stamp.nanosec) / 1e9 - time_init_; // image time stamp
+        robot_store_->vo_p_body_pre_2_body_(0) = msg->x_relative;
+        robot_store_->vo_p_body_pre_2_body_(1) = msg->y_relative;
+        robot_store_->vo_p_body_pre_2_body_(2) = msg->z_relative;
     }
 
     void robotSub::timerCallback()
@@ -77,7 +94,7 @@ namespace robotSub
     {
         if (robot_params_->est_type_ == 0)
         {
-            std::string log_name = "mhe_" + this->get_parameter("log_name").as_string();
+            std::string log_name = this->get_parameter("log_name").as_string();
 
             logger.init(log_name);
             logger.add_data(gt_p_, "pose");
@@ -90,7 +107,7 @@ namespace robotSub
         }
         else
         {
-            std::string log_name = "kf_" + this->get_parameter("log_name").as_string();
+            std::string log_name =  this->get_parameter("log_name").as_string();
 
             logger.init(log_name);
             logger.add_data(gt_p_, "pose");

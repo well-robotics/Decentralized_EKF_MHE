@@ -91,6 +91,9 @@
         "typeinfo": "cpp",
         "valarray": "cpp",
         "variant": "cpp",
-        "*.ipp": "cpp"
+        "*.ipp": "cpp",
+        "geometry": "cpp",
+        "sparse": "cpp",
+        "core": "cpp"
     }
 }

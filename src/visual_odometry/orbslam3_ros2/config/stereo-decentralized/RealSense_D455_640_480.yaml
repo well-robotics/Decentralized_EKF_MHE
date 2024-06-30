@@ -1,5 +1,4 @@
 %YAML:1.0
-
 #--------------------------------------------------------------------------------------------
 # Camera Parameters. Adjust them!
 #--------------------------------------------------------------------------------------------
@@ -27,6 +26,7 @@ Camera2.k2: 0.000171136121708313
 Camera2.p1: 0.0009029841275199593
 Camera2.p2: -0.0014687539857781737
 
+# Transformation of Right Camera in Left Camera frame
 Tlr: !!opencv-matrix
   rows: 3
   cols: 4
@@ -36,21 +36,23 @@ Tlr: !!opencv-matrix
          -0.005399874482477699, 2.9207701080259825e-05, 0.9999854201449558, 4.793637593999134e-05,
          0.0, 0.0, 0.0, 1.0]
 
-Camera.bFishEye: 0
+# Camera Resoultion
 Camera.width: 640
 Camera.height: 480
+
 # Camera frames per second
 Camera.fps: 30.0
-# stereo baseline times fx
+# Stereo baseline times fx
 Camera.bf: 37.55167911
 
-# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
-Camera.RGB: 1
 # Close/Far threshold. Baseline times.
 ThDepth: 45.0
 
-Camera.imageScale: 1.0 # 0.5 #0.7071 # 1/sqrt(2)
+# Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
+Camera.RGB: 1
+Camera.bFishEye: 0
 
+Camera.imageScale: 1.0 # 0.5 #0.7071 # 1/sqrt(2)
 #--------------------------------------------------------------------------------------------
 # ORB Parameters
 #--------------------------------------------------------------------------------------------

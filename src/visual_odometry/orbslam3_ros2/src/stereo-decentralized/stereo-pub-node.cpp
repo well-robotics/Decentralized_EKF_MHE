@@ -6,7 +6,7 @@ using std::placeholders::_1;
 using std::placeholders::_2;
 
 StereoPubNode::StereoPubNode(ORB_SLAM3::System *pSLAM, const string &strSettingsFile, const string &strDoRectify)
-    : Node("ORB_SLAM3_ROS2"),
+    : Node("vo_sub"),
       m_SLAM(pSLAM)
 {
     stringstream ss(strDoRectify);
@@ -50,31 +50,29 @@ StereoPubNode::StereoPubNode(ORB_SLAM3::System *pSLAM, const string &strSettings
         cv::initUndistortRectifyMap(K_r, D_r, R_r, P_r.rowRange(0, 3).colRange(0, 3), cv::Size(cols_r, rows_r), CV_32F, M1r, M2r);
     }
 
-    // the pogox body to cam transformation
-    //-----------------------------------------------------------
-    // T_body_to_camera_.translation() = Eigen::Vector3d(0.12615755, 0.06577286, -0.14597424);
-    // q_body_to_camera_ = Eigen::Quaterniond(0.5021, -0.5018, 0.4993, -0.4968); // the pogox body to cam transformation
-    // T_body_to_camera_.rotate(q_body_to_camera_.matrix());
+    std::vector<double> R_ic_vec;
+    std::vector<double> p_ic_vec;
 
-    // the go1 body (imu) to cam transformation
-    //-----------------------------------------------------------
-    // T_ic: (cam0 to imu0):
-    // [[-0.01565831 -0.04952191 0.99865029 0.10578079]
-    // [-0.99987729 0.00029446 -0.01566294 0.1104795 ]
-    // [ 0.0004816 -0.99877299 -0.04952044 0.11233088]
+    this->declare_parameter("R_ic", std::vector<double>{1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0});
+    this->declare_parameter("p_ic", std::vector<double>{0.0, 0.0, 0.0});
+    R_ic_vec = this->get_parameter("R_ic").as_double_array();
+    p_ic_vec = this->get_parameter("p_ic").as_double_array();
 
-    Eigen::Matrix3d T_body_to_camera_rotation;
-    T_body_to_camera_rotation << -0.01565831, -0.04952191, 0.99865029,
-        -0.99987729, 0.00029446, -0.01566294,
-        0.0004816, -0.99877299, -0.04952044;
-    T_body_to_camera_.translation() = Eigen::Vector3d(0.10578079, 0.1104795, 0.11233088);
+    Eigen::Map<Eigen::Matrix<double, 3, 3, Eigen::RowMajor>> T_body_to_camera_rotation(R_ic_vec.data());
     T_body_to_camera_.rotate(T_body_to_camera_rotation);
+    Eigen::Vector3d p_body_to_camera;
+    p_body_to_camera << p_ic_vec[0], p_ic_vec[1], p_ic_vec[2];
+    T_body_to_camera_.translation() = p_body_to_camera;
+
+    this->declare_parameter<std::string>("image_topic_left", "/camera/infra1/image_rect_raw");
+    this->declare_parameter<std::string>("image_topic_right", "/camera/infra2/image_rect_raw");
+    std::string image_topic_left_str = this->get_parameter("image_topic_left").as_string();
+    std::string image_topic_right_str = this->get_parameter("image_topic_right").as_string();
+
+    left_sub = std::make_shared<message_filters::Subscriber<ImageMsg>>(shared_ptr<rclcpp::Node>(this), image_topic_left_str);
+    right_sub = std::make_shared<message_filters::Subscriber<ImageMsg>>(shared_ptr<rclcpp::Node>(this), image_topic_right_str);
 
     // auto qos = rclcpp::QoS(rclcpp::KeepLast(1), rmw_qos_profile_sensor_data);
-
-    left_sub = std::make_shared<message_filters::Subscriber<ImageMsg>>(shared_ptr<rclcpp::Node>(this), "/camera/infra1/image_rect_raw");
-    right_sub = std::make_shared<message_filters::Subscriber<ImageMsg>>(shared_ptr<rclcpp::Node>(this), "/camera/infra2/image_rect_raw");
-
     syncApproximate = std::make_shared<message_filters::Synchronizer<approximate_sync_policy>>(approximate_sync_policy(50), *left_sub, *right_sub);
     syncApproximate->registerCallback(&StereoPubNode::GrabStereo, this);
 
@@ -177,7 +175,7 @@ void StereoPubNode::GrabStereo(const ImageMsg::SharedPtr msgLeft, const ImageMsg
         pose_world_2_body.pose.orientation.y = q_world_to_body.y();
         pose_world_2_body.pose.orientation.z = q_world_to_body.z();
         pose_world_2_body.pose.orientation.w = q_world_to_body.w();
-        
+
         publish_pose->publish(pose_world_2_body);
 
         // ------------------------------------------------

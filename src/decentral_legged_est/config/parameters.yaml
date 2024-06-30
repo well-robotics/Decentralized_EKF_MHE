@@ -1,6 +1,6 @@
 est_sub:
   ros__parameters:
-    log_name: "go1_exp"
+    log_name: "exp"
 
     prior:
       p_init_std: [0.001, 0.001, 0.001]

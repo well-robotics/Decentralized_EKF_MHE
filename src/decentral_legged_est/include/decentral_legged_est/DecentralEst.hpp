@@ -5,9 +5,9 @@
 #include <Eigen/Sparse>
 #include <thread>
 
-#include "../include/MheSrb.hpp"
-#include "../include/EigenUtils.hpp"
-#include "../include/Spline/Bezier_simple.hpp"
+#include "decentral_legged_est/MheSrb.hpp"
+#include "decentral_legged_est/EigenUtils.hpp"
+#include "decentral_legged_est/Spline/Bezier_simple.hpp"
 
 using namespace Eigen;
 // enum estimation_type {
