@@ -1,4 +1,44 @@
 
+// {
+//     "version": "0.2.0",
+//     "configurations": [
+//         {
+//             "name": "GDP: launch",
+//             "type": "cppdbg",
+//             "request": "launch",
+//             "program": "/home/jkang/vo_ws/Decentralized_EKF_MHE/install/go1_exp/lib/go1_exp/sub",
+//             "args": [
+//                 "--ros-args",
+//                 "--params-file",
+//                 "/home/jkang/vo_ws/Decentralized_EKF_MHE/src/go1_exp/config/parameters_go1.yaml"
+//             ],
+//             "stopAtEntry": false,
+//             "cwd": "/",
+//             "environment": [],
+//             "externalConsole": false,
+//             "MIMode": "gdb",
+//             // "preLaunchTask": "colcon: debug",
+//             "setupCommands": [
+//                 {
+//                     "description": "Enable pretty-printing for gdb",
+//                     "text": "-enable-pretty-printing",
+//                     "ignoreFailures": true
+//                 },
+//                 {
+//                     "description": "Set Disassembly Flavor to Intel",
+//                     "text": "-gdb-set disassembly-flavor intel",
+//                     "ignoreFailures": true
+//                 }
+//                 // {
+//                 //     "description": "Source_setup.bash",
+//                 //     "text": "source install/setup.bash",
+//                 //     "ignoreFailures": true
+//                 // }
+//             ]
+//         }
+//     ]
+// }
+
 {
     "version": "0.2.0",
     "configurations": [
@@ -6,11 +46,11 @@
             "name": "GDP: launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "/home/jkang/vo_ws/Decentralized_EKF_MHE/install/go1_exp/lib/go1_exp/sub",
+            "program": "/home/jkang/vo_ws/Decentralized_EKF_MHE/install/orien_est/lib/orien_est/sub",
             "args": [
                 "--ros-args",
                 "--params-file",
-                "/home/jkang/vo_ws/Decentralized_EKF_MHE/src/go1_exp/config/parameters_go1.yaml"
+                "/home/jkang/vo_ws/Decentralized_EKF_MHE/src/go1_example/config/parameters_go1.yaml"
             ],
             "stopAtEntry": false,
             "cwd": "/",

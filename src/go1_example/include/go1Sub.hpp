@@ -6,8 +6,8 @@
 // CPP header(non ros)
 #include <Eigen/Sparse>
 #include <Eigen/Geometry>
-#include "decentral_legged_est/decentral_legged_est/EigenUtils.hpp"
-#include "decentral_legged_est/decentral_legged_est/EstSub.hpp"
+#include "decentral_legged_est/EigenUtils.hpp"
+#include "decentral_legged_est/EstSub.hpp"
 
 // ros msg 
 #include <sensor_msgs/msg/imu.hpp>

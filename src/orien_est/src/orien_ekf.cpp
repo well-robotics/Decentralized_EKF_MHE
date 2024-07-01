@@ -9,15 +9,34 @@ namespace orien_ekf
     {
 
         gravity_ << 0, 0, 9.81;
-        C_gyro_.diagonal() << std::pow(0.1, 2), std::pow(0.1, 2), std::pow(0.1, 2);
-        C_accel_.diagonal() << std::pow(4.0, 2), std::pow(4.0, 2), std::pow(4.0, 2);
-        C_vo_.diagonal() << std::pow(0.0001, 2), std::pow(0.0001, 2), std::pow(0.0001, 2), std::pow(0.0001, 2);
 
-        quternion_prior_ = VectorXd::Zero(4);
-        quternion_prior_(0) = 1;
+        // this->declare_parameter("init_std", std::vector<double>{0.001, 0.001, 0.001, 0.001});
+        // this->declare_parameter("process_std", std::vector<double>{0.1, 0.1, 0.1});
+        // this->declare_parameter("gravity_meas_std", std::vector<double>{4.0, 4.0, 4.0});
+        // this->declare_parameter("vo_meas_std", std::vector<double>{0.0001, 0.0001, 0.0001, 0.0001});
+        // this->declare_parameter("quaternion_init", std::vector<double>{1.0, 0.0, 0.0, 0.0});
+        // this->declare_parameter("rate", 500);
+
+        // std::vector<double> q_init_std = this->get_parameter("init_std").as_double_array();
+        // std::vector<double> gyro_std = this->get_parameter("process_std").as_double_array();
+        // std::vector<double> accel_std = this->get_parameter("gravity_meas_std").as_double_array();
+        // std::vector<double> vo_std = this->get_parameter("vo_meas_std").as_double_array();
+        // std::vector<double> q_init = this->get_parameter("quaternion_init").as_double_array();
+        // std::cout << "aa" << std::endl;
+        // dt_ = 1 / this->get_parameter("rate").as_int();
+
+        // C_accel_ = Matrix3d::Zero();
+        // C_gyro_ = Matrix3d::Zero();
+        // Cov_q_ = Matrix4d::Zero();
+        // C_vo_ = Matrix4d::Zero();
+
+        // Cov_q_.diagonal() << std::pow(q_init_std[0], 2), std::pow(q_init_std[1], 2), std::pow(q_init_std[2], 2), std::pow(q_init_std[3], 2);
+        // C_gyro_.diagonal() << std::pow(gyro_std[0], 2), std::pow(gyro_std[1], 2), std::pow(gyro_std[2], 2);
+        // C_accel_.diagonal() << std::pow(accel_std[0], 2), std::pow(accel_std[1], 2), std::pow(accel_std[2], 2);
+        // C_vo_.diagonal() << std::pow(vo_std[0], 2), std::pow(vo_std[1], 2), std::pow(vo_std[2], 2), std::pow(vo_std[3], 2);
+        // quternion_prior_ << q_init[0], q_init[1], q_init[2], q_init[3];
 
         quaternion_ = quternion_prior_;
-        Cov_q_ = 0.001 * 0.001 * MatrixXd::Identity(4, 4);
 
         vo_pose_sub = create_subscription<geometry_msgs::msg::PoseStamped>("orb/pos",
                                                                            10,
@@ -25,50 +44,33 @@ namespace orien_ekf
         imu_sub = create_subscription<sensor_msgs::msg::Imu>("unitree/imu",
                                                              10,
                                                              std::bind(&orien_ekf::imu_callback, this, std::placeholders::_1));
-        // imu_ros2_sub = create_subscription<communication::msg::FootImu>("/hardware/ngimu_sensor_ACM1",
-        //                                                                 10,
-        //                                                                 std::bind(&orien_ekf::imu_ros2_callback, this, std::placeholders::_1));
-
-        vrpn_sub = create_subscription<geometry_msgs::msg::PoseStamped>("/vrpn_mocap/RigidBody/pose",
-                                                                        10,
-                                                                        std::bind(&orien_ekf::vrpn_callback, this, std::placeholders::_1));
         mocap_sub = create_subscription<optitrack_broadcast::msg::Mocap>("/mocap/RigidBody",
                                                                          10,
                                                                          std::bind(&orien_ekf::mocap_callback, this, std::placeholders::_1));
         publisher_filter_ = create_publisher<sensor_msgs::msg::Imu>("imu/filter", 10);
-        publisher_filter_euler_ = create_publisher<geometry_msgs::msg::Vector3>("imu/filter/euler", 10);
-        publisher_mocap_euler_ = create_publisher<geometry_msgs::msg::Vector3>("mocap/euler", 10);
-        publisher_vo_euler_ = create_publisher<geometry_msgs::msg::Vector3>("vo/euler", 10);
 
-        timer_ = create_wall_timer(std::chrono::microseconds(2000), std::bind(&orien_ekf::timerCallback, this));
-        time_0_ = static_cast<double>(rclcpp::Clock().now().nanoseconds()) / 1e9;
+        timer_ = create_wall_timer(std::chrono::microseconds(int(dt_ * 1e6)), std::bind(&orien_ekf::timerCallback, this));
+        time_init_ = static_cast<double>(rclcpp::Clock().now().nanoseconds()) / 1e9;
     }
 
     void orien_ekf::vo_pose_callback(const geometry_msgs::msg::PoseStamped::SharedPtr msg)
     {
         vo_time_ = static_cast<double>(msg->header.stamp.sec) +
-                   static_cast<double>(msg->header.stamp.nanosec) / 1e9 - time_0_; // image_pre time stamp
+                   static_cast<double>(msg->header.stamp.nanosec) / 1e9 - time_init_; // image_pre time stamp
         vo_pose_quaternion_(1) = msg->pose.orientation.x;
         vo_pose_quaternion_(2) = msg->pose.orientation.y;
         vo_pose_quaternion_(3) = msg->pose.orientation.z;
         vo_pose_quaternion_(0) = msg->pose.orientation.w;
+
         vo_new_ = true;
         init_vo = 1;
-
-        double roll, pitch, yaw = 0.0;
-
-        quaternionToEuler(vo_pose_quaternion_, yaw, pitch, roll);
-        geometry_msgs::msg::Vector3 vo_euler;
-        vo_euler.x = roll;
-        vo_euler.y = pitch;
-        vo_euler.z = yaw;
-        publisher_vo_euler_->publish(vo_euler);
     }
 
     void orien_ekf::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
     {
 
-        imu_time_ = static_cast<double>(rclcpp::Clock().now().nanoseconds()) / 1e9 - time_0_; // Correctly obtaining the timestamp in seconds as a double
+        imu_time_ = static_cast<double>(rclcpp::Clock().now().nanoseconds()) / 1e9 - time_init_; // Correctly obtaining the timestamp in seconds as a double
+        imu_header_.stamp = msg->header.stamp;
 
         accel_b_(0) = msg->linear_acceleration.x;
         accel_b_(1) = msg->linear_acceleration.y;
@@ -81,41 +83,6 @@ namespace orien_ekf
         init_imu = 1;
     }
 
-    // void orien_ekf::imu_ros2_callback(const communication::msg::FootImu::SharedPtr msg)
-    // {
-    //     imu_header.stamp = msg->header.stamp;
-
-    //     imu_time_ = static_cast<double>(rclcpp::Clock().now().nanoseconds()) / 1e9 - time_0_; // Correctly obtaining the timestamp in seconds as a double
-
-    //     accel_b_(0) = msg->linear_acceleration.x;
-    //     accel_b_(1) = msg->linear_acceleration.y;
-    //     accel_b_(2) = msg->linear_acceleration.z;
-
-    //     angular_vel_b_(0) = msg->angular_velocity.x;
-    //     angular_vel_b_(1) = msg->angular_velocity.y;
-    //     angular_vel_b_(2) = msg->angular_velocity.z;
-
-    //     init_imu = 1;
-    // }
-    void orien_ekf::vrpn_callback(const geometry_msgs::msg::PoseStamped::SharedPtr msg)
-    {
-
-        mocap_quaternion_(1) = msg->pose.orientation.x;
-        mocap_quaternion_(2) = msg->pose.orientation.y;
-        mocap_quaternion_(3) = msg->pose.orientation.z;
-        mocap_quaternion_(0) = msg->pose.orientation.w;
-
-        double roll, pitch, yaw = 0.0;
-
-        quaternionToEuler(mocap_quaternion_, yaw, pitch, roll);
-        geometry_msgs::msg::Vector3 mocap_euler;
-        mocap_euler.x = roll;
-        mocap_euler.y = pitch;
-        mocap_euler.z = yaw;
-        publisher_mocap_euler_->publish(mocap_euler);
-
-        init_mocap = 1;
-    }
     void orien_ekf::mocap_callback(const optitrack_broadcast::msg::Mocap::SharedPtr msg)
     {
 
@@ -124,20 +91,11 @@ namespace orien_ekf
         mocap_quaternion_(3) = msg->quaternion[3];
         mocap_quaternion_(0) = msg->quaternion[0];
 
-        double roll, pitch, yaw = 0.0;
-
-        quaternionToEuler(mocap_quaternion_, yaw, pitch, roll);
-        geometry_msgs::msg::Vector3 mocap_euler;
-        mocap_euler.x = roll;
-        mocap_euler.y = pitch;
-        mocap_euler.z = yaw;
-        publisher_mocap_euler_->publish(mocap_euler);
-
         init_mocap = 1;
     }
+
     void orien_ekf::timerCallback()
     {
-        // auto start1 = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
         if (!init_ && init_mocap * init_imu)
         {
             quaternion_ = mocap_quaternion_;
@@ -152,7 +110,7 @@ namespace orien_ekf
             quaternion_ = quaternion_correct_;
             Cov_q_ = Cov_q_correct_;
 
-            discrete_time++;
+            discrete_time_++;
 
             Quaterniond mocap;
             Quaterniond current;
@@ -167,21 +125,9 @@ namespace orien_ekf
             current.z() = quaternion_(3);
 
             Quaterniond offset = mocap.inverse() * current;
-
-            // std::cout << offset.w() << "||" << offset.x() << "||" << offset.y() << "||" << offset.z() << std::endl;
         }
-        double roll, pitch, yaw = 0.0;
-
-        quaternionToEuler(quaternion_, yaw, pitch, roll);
-
-        geometry_msgs::msg::Vector3 imu_pub_euler;
-        imu_pub_euler.x = roll;
-        imu_pub_euler.y = pitch;
-        imu_pub_euler.z = yaw;
-        publisher_filter_euler_->publish(imu_pub_euler);
-
         sensor_msgs::msg::Imu imu_pub_msg;
-        imu_pub_msg.header.stamp = imu_header.stamp;
+        imu_pub_msg.header.stamp = imu_header_.stamp;
         imu_pub_msg.orientation.w = quaternion_(0);
         imu_pub_msg.orientation.x = quaternion_(1);
         imu_pub_msg.orientation.y = quaternion_(2);
@@ -196,10 +142,6 @@ namespace orien_ekf
         imu_pub_msg.angular_velocity.z = angular_vel_b_(2);
 
         publisher_filter_->publish(imu_pub_msg);
-        // auto stop1 = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
-        // auto duration1 = static_cast<double>(stop1 - start1) / 1000000;
-        // // std::cout << "Total loop hz elapsed: " << 1 / duration1 << " hz." << std::endl;
-        // std::cout << 1 / duration1 << std::endl;
     }
 
     void orien_ekf::gyro_nonlinear_predict(VectorXd &quaternion_pred, VectorXd &quaternion, Vector3d &gyro_reading, MatrixXd &Cov_q, MatrixXd &Cov_q_pred)
@@ -233,7 +175,6 @@ namespace orien_ekf
 
         MatrixXd K = Cov_q_pred * H.transpose() * (H * Cov_q_pred * H.transpose() + accel_relative_norm * accel_relative_norm * C_accel_).inverse();
         quaternion_correct = quaternion_pred + K * (accel_readings - accel_hat);
-        // std::cout << accel_readings - accel_hat << std::endl;
         Cov_q_correct = (MatrixXd::Identity(4, 4) - K * H) * Cov_q_pred;
 
         quat_norm(quaternion_correct);
@@ -249,6 +190,64 @@ namespace orien_ekf
         Cov_q_correct = (MatrixXd::Identity(4, 4) - K * H) * Cov_q_pred;
 
         quat_norm(quaternion_correct);
+    }
+
+    void orien_ekf::get_measurement()
+    {
+        angular_vel_stack_.push_back(angular_vel_b_);
+        accel_stack_.push_back(accel_b_);
+        imu_time_stack_.push_back(imu_time_);
+        discrete_time_stack_.push_back(discrete_time_);
+        filter_quaternion_stack_.push_back(quaternion_);
+        filter_Cov_stack_.push_back(Cov_q_);
+
+        if (vo_new_ && imu_time_stack_.size() > 0) // log when new vo transformation was subscribed
+        {
+            // auto start = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
+
+            vo_new_ = false; // new vo meassage logged
+            double _vo_time = vo_time_;
+            VectorXd vo_reading = vo_pose_quaternion_;
+
+            // sychronize vo timestamp to the left first imu timestamp
+            // imu time is the rclcpp::clock.now() when the imu_callback gets callled
+            auto idx_pre_ptr = std::upper_bound(imu_time_stack_.begin(),
+                                                imu_time_stack_.end(), _vo_time); // find the first imu time bigger than vo_time_pre_
+
+            if (idx_pre_ptr == imu_time_stack_.begin())
+            {
+                std::cout << "not storing enough imu info, failed to correct" << std::endl;
+                // should happens at the beginning of the MHE
+                // discard the vo_meas
+            }
+            else // this if condition should only happens at during the initalization, so give some time for the imu to store enough info
+            {
+                int imu_sychron_idx = std::distance(imu_time_stack_.begin(), idx_pre_ptr) - 1;
+                int relative_discrete_time = discrete_time_stack_.back() - discrete_time_stack_[imu_sychron_idx];
+                quaternion_ = filter_quaternion_stack_[imu_sychron_idx];
+                Cov_q_ = filter_Cov_stack_[imu_sychron_idx];
+
+                for (int i = 0; i < relative_discrete_time - 1; i++)
+                {
+                    gyro_nonlinear_predict(quaternion_pred_, quaternion_, angular_vel_stack_[imu_sychron_idx + i], Cov_q_, Cov_q_pred_);
+                    gyro_nonlinear_correct(quaternion_correct_, quaternion_pred_, accel_stack_[imu_sychron_idx + i], Cov_q_pred_, Cov_q_correct_);
+
+                    // Trajectory update: VO correction followed by the consequetive measurements update up to current time
+                    if (i == 0)
+                    {
+                        quaternion_pred_ = quaternion_correct_;
+                        Cov_q_pred_ = Cov_q_correct_;
+                        vo_nonlinear_correct(quaternion_correct_, quaternion_pred_, vo_reading, Cov_q_pred_, Cov_q_correct_);
+                    }
+                    quaternion_ = quaternion_correct_;
+                    Cov_q_ = Cov_q_correct_;
+                }
+            }
+
+            // auto stop = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
+            // auto duration = static_cast<double>(stop - start) / 1000000;
+            // std::cout << "Traj update time elapsed: " << duration  << std::endl;
+        }
     }
 
     void orien_ekf::gyro_2_Ohm(Vector3d &gyro_reading, MatrixXd &Ohm)
@@ -394,65 +393,6 @@ namespace orien_ekf
     {
         double norm = quaternion.norm();
         quaternion = quaternion / norm;
-    }
-
-    void orien_ekf::get_measurement()
-    {
-        angular_vel_stack_.push_back(angular_vel_b_);
-        accel_stack_.push_back(accel_b_);
-        imu_time_stack_.push_back(imu_time_);
-        discrete_time_stack_.push_back(discrete_time);
-        filter_quaternion_stack_.push_back(quaternion_);
-        Cov_stack_.push_back(Cov_q_);
-
-        if (vo_new_ && imu_time_stack_.size() > 0) // log when new vo transformation was subscribed
-        {
-            auto start1 = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
-
-            vo_new_ = false; // meassage logged
-            double _vo_time = vo_time_;
-            VectorXd vo_reading = vo_pose_quaternion_;
-
-            // sychronize vo timestamp to the left first imu timestamp
-            // imu time is the rclcpp::clock.now() when the imu_callback gets callled
-            auto idx_pre_ptr = std::upper_bound(imu_time_stack_.begin(),
-                                                imu_time_stack_.end(), _vo_time); // find the first imu time bigger than vo_time_pre_
-
-            if (idx_pre_ptr == imu_time_stack_.begin())
-            {
-                std::cout << "not storing enough imu info, failed to correct" << std::endl;
-                // should happens at the beginning of the MHE
-                // discard the vo_meas
-            }
-            else // this if condition should only happens at during the initalization, so give some time for the imu to store enough info
-            {
-                int imu_sychron_idx = std::distance(imu_time_stack_.begin(), idx_pre_ptr) - 1;
-                int relative_discrete_time = discrete_time_stack_.back() - discrete_time_stack_[imu_sychron_idx];
-                quaternion_ = filter_quaternion_stack_[imu_sychron_idx];
-                Cov_q_ = Cov_stack_[imu_sychron_idx];
-
-                for (int i = 0; i < relative_discrete_time - 1; i++)
-                {
-                    gyro_nonlinear_predict(quaternion_pred_, quaternion_, angular_vel_stack_[imu_sychron_idx + i], Cov_q_, Cov_q_pred_);
-                    gyro_nonlinear_correct(quaternion_correct_, quaternion_pred_, accel_stack_[imu_sychron_idx + i], Cov_q_pred_, Cov_q_correct_);
-
-                    if (i == 0)
-                    {
-                        quaternion_pred_ = quaternion_correct_;
-                        Cov_q_pred_ = Cov_q_correct_;
-                        vo_nonlinear_correct(quaternion_correct_, quaternion_pred_, vo_reading, Cov_q_pred_, Cov_q_correct_);
-                    }
-
-                    quaternion_ = quaternion_correct_;
-                    Cov_q_ = Cov_q_correct_;
-                }
-            }
-
-            auto stop1 = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
-            auto duration1 = static_cast<double>(stop1 - start1) / 1000000;
-            // std::cout << "Total loop hz elapsed: " << 1 / duration1 << " hz." << std::endl;
-            std::cout << 1 / duration1 << std::endl;
-        }
     }
 }
 
