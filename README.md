@@ -19,3 +19,11 @@ FROST is used to generate kinematics libraries for the project. To install FROST
 2. Remember to change the Mathematica version in mathrun.m
 
 ### [ORBSLAM3](https://github.com/UZ-SLAMLab/ORB_SLAM3)
+
+## Install
+```bash
+mkdir ~/ros2_ws
+git clone https://github.com/well-robotics/Decentralized_EKF_MHE.git
+colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install
+```
+
