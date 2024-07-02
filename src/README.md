@@ -1,3 +1,6 @@
+# Project Directory Structure
+
+```plaintext
 Decentralized_EKF_MHE/
 │
 ├── decentral_legged_est/
