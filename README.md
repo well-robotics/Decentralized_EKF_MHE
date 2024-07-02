@@ -5,6 +5,8 @@ Decentralized_EKF_MHE decentralizes the nonlinear estimation of the floating bas
 
 For more details, please refer to the paper. [[arxiv](http://www.arxiv.org/abs/2405.20567)] [[youtube](https://www.youtube.com/watch?v=k3bBO87UIlk)]
 
+![Alt text](Block_Diagram.jpg)
+
 ## Prerequisites
 
 ### Ubuntu 20.04
