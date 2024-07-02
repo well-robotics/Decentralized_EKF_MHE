@@ -40,7 +40,14 @@ ament_target_dependencies(sub rclcpp optitrack_broadcast sensor_msgs custom_msgs
 
 install( TARGETS sub DESTINATION lib/${PROJECT_NAME}) 
 
-if(BUILD_TESTING)
+install(DIRECTORY 
+        launch 
+        DESTINATION share/${PROJECT_NAME}/
+)
+install(FILES config/parameters_go1.yaml
+  DESTINATION share/${PROJECT_NAME}/config)  
+
+  if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 endif()

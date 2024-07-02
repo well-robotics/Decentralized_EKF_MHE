@@ -10,31 +10,25 @@ namespace orien_ekf
 
         gravity_ << 0, 0, 9.81;
 
-        // this->declare_parameter("init_std", std::vector<double>{0.001, 0.001, 0.001, 0.001});
-        // this->declare_parameter("process_std", std::vector<double>{0.1, 0.1, 0.1});
-        // this->declare_parameter("gravity_meas_std", std::vector<double>{4.0, 4.0, 4.0});
-        // this->declare_parameter("vo_meas_std", std::vector<double>{0.0001, 0.0001, 0.0001, 0.0001});
-        // this->declare_parameter("quaternion_init", std::vector<double>{1.0, 0.0, 0.0, 0.0});
-        // this->declare_parameter("rate", 500);
+        this->declare_parameter("init_std", std::vector<double>{0.001, 0.001, 0.001, 0.001});
+        this->declare_parameter("process_std", std::vector<double>{0.1, 0.1, 0.1});
+        this->declare_parameter("gravity_meas_std", std::vector<double>{4.0, 4.0, 4.0});
+        this->declare_parameter("vo_meas_std", std::vector<double>{0.0001, 0.0001, 0.0001, 0.0001});
+        this->declare_parameter("quaternion_init", std::vector<double>{1.0, 0.0, 0.0, 0.0});
+        this->declare_parameter("rate", 500);
 
-        // std::vector<double> q_init_std = this->get_parameter("init_std").as_double_array();
-        // std::vector<double> gyro_std = this->get_parameter("process_std").as_double_array();
-        // std::vector<double> accel_std = this->get_parameter("gravity_meas_std").as_double_array();
-        // std::vector<double> vo_std = this->get_parameter("vo_meas_std").as_double_array();
-        // std::vector<double> q_init = this->get_parameter("quaternion_init").as_double_array();
-        // std::cout << "aa" << std::endl;
-        // dt_ = 1 / this->get_parameter("rate").as_int();
+        std::vector<double> q_init_std = this->get_parameter("init_std").as_double_array();
+        std::vector<double> gyro_std = this->get_parameter("process_std").as_double_array();
+        std::vector<double> accel_std = this->get_parameter("gravity_meas_std").as_double_array();
+        std::vector<double> vo_std = this->get_parameter("vo_meas_std").as_double_array();
+        std::vector<double> q_init = this->get_parameter("quaternion_init").as_double_array();
+        dt_ = 1/static_cast<double>(this->get_parameter("rate").as_int());
 
-        // C_accel_ = Matrix3d::Zero();
-        // C_gyro_ = Matrix3d::Zero();
-        // Cov_q_ = Matrix4d::Zero();
-        // C_vo_ = Matrix4d::Zero();
-
-        // Cov_q_.diagonal() << std::pow(q_init_std[0], 2), std::pow(q_init_std[1], 2), std::pow(q_init_std[2], 2), std::pow(q_init_std[3], 2);
-        // C_gyro_.diagonal() << std::pow(gyro_std[0], 2), std::pow(gyro_std[1], 2), std::pow(gyro_std[2], 2);
-        // C_accel_.diagonal() << std::pow(accel_std[0], 2), std::pow(accel_std[1], 2), std::pow(accel_std[2], 2);
-        // C_vo_.diagonal() << std::pow(vo_std[0], 2), std::pow(vo_std[1], 2), std::pow(vo_std[2], 2), std::pow(vo_std[3], 2);
-        // quternion_prior_ << q_init[0], q_init[1], q_init[2], q_init[3];
+        Cov_q_.diagonal() << std::pow(q_init_std[0], 2), std::pow(q_init_std[1], 2), std::pow(q_init_std[2], 2), std::pow(q_init_std[3], 2);
+        C_gyro_.diagonal() << std::pow(gyro_std[0], 2), std::pow(gyro_std[1], 2), std::pow(gyro_std[2], 2);
+        C_accel_.diagonal() << std::pow(accel_std[0], 2), std::pow(accel_std[1], 2), std::pow(accel_std[2], 2);
+        C_vo_.diagonal() << std::pow(vo_std[0], 2), std::pow(vo_std[1], 2), std::pow(vo_std[2], 2), std::pow(vo_std[3], 2);
+        quternion_prior_ << q_init[0], q_init[1], q_init[2], q_init[3];
 
         quaternion_ = quternion_prior_;
 
@@ -44,9 +38,6 @@ namespace orien_ekf
         imu_sub = create_subscription<sensor_msgs::msg::Imu>("unitree/imu",
                                                              10,
                                                              std::bind(&orien_ekf::imu_callback, this, std::placeholders::_1));
-        mocap_sub = create_subscription<optitrack_broadcast::msg::Mocap>("/mocap/RigidBody",
-                                                                         10,
-                                                                         std::bind(&orien_ekf::mocap_callback, this, std::placeholders::_1));
         publisher_filter_ = create_publisher<sensor_msgs::msg::Imu>("imu/filter", 10);
 
         timer_ = create_wall_timer(std::chrono::microseconds(int(dt_ * 1e6)), std::bind(&orien_ekf::timerCallback, this));
@@ -70,7 +61,7 @@ namespace orien_ekf
     {
 
         imu_time_ = static_cast<double>(rclcpp::Clock().now().nanoseconds()) / 1e9 - time_init_; // Correctly obtaining the timestamp in seconds as a double
-        imu_header_.stamp = msg->header.stamp;
+        // imu_header_.stamp = msg->header.stamp;
 
         accel_b_(0) = msg->linear_acceleration.x;
         accel_b_(1) = msg->linear_acceleration.y;
@@ -83,25 +74,9 @@ namespace orien_ekf
         init_imu = 1;
     }
 
-    void orien_ekf::mocap_callback(const optitrack_broadcast::msg::Mocap::SharedPtr msg)
-    {
-
-        mocap_quaternion_(1) = msg->quaternion[1];
-        mocap_quaternion_(2) = msg->quaternion[2];
-        mocap_quaternion_(3) = msg->quaternion[3];
-        mocap_quaternion_(0) = msg->quaternion[0];
-
-        init_mocap = 1;
-    }
-
     void orien_ekf::timerCallback()
     {
-        if (!init_ && init_mocap * init_imu)
-        {
-            quaternion_ = mocap_quaternion_;
-            init_ = 1;
-        }
-        if (init_imu && init_)
+        if (init_imu)
         {
             get_measurement();
             gyro_nonlinear_predict(quaternion_pred_, quaternion_, angular_vel_b_, Cov_q_, Cov_q_pred_);
@@ -111,20 +86,6 @@ namespace orien_ekf
             Cov_q_ = Cov_q_correct_;
 
             discrete_time_++;
-
-            Quaterniond mocap;
-            Quaterniond current;
-            mocap.w() = mocap_quaternion_(0);
-            mocap.x() = mocap_quaternion_(1);
-            mocap.y() = mocap_quaternion_(2);
-            mocap.z() = mocap_quaternion_(3);
-
-            current.w() = quaternion_(0);
-            current.x() = quaternion_(1);
-            current.y() = quaternion_(2);
-            current.z() = quaternion_(3);
-
-            Quaterniond offset = mocap.inverse() * current;
         }
         sensor_msgs::msg::Imu imu_pub_msg;
         imu_pub_msg.header.stamp = imu_header_.stamp;
@@ -203,7 +164,7 @@ namespace orien_ekf
 
         if (vo_new_ && imu_time_stack_.size() > 0) // log when new vo transformation was subscribed
         {
-            // auto start = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
+            auto start = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
 
             vo_new_ = false; // new vo meassage logged
             double _vo_time = vo_time_;
@@ -244,9 +205,9 @@ namespace orien_ekf
                 }
             }
 
-            // auto stop = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
-            // auto duration = static_cast<double>(stop - start) / 1000000;
-            // std::cout << "Traj update time elapsed: " << duration  << std::endl;
+            auto stop = std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch().count();
+            auto duration = static_cast<double>(stop - start) / 1000000;
+            std::cout << "Traj update time elapsed: " << duration << std::endl;
         }
     }
 

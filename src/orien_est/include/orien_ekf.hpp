@@ -1,3 +1,5 @@
+// IMU Quaternion EKF, implemented based on https://ahrs.readthedocs.io/en/latest/filters/ekf.html
+
 #ifndef IMU_EKF_HPP
 #define IMU_EKF_HPP
 
@@ -21,7 +23,6 @@ namespace orien_ekf
     private:
         rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
         rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr vo_pose_sub;
-        rclcpp::Subscription<optitrack_broadcast::msg::Mocap>::SharedPtr mocap_sub;
         
         rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr publisher_filter_;
 
@@ -31,8 +32,6 @@ namespace orien_ekf
         Vector3d angular_vel_b_ = Vector3d::Zero();
 
         double dt_ = 0.002;
-
-        bool init_filter = false;
 
         VectorXd vo_pose_quaternion_ = VectorXd::Zero(4);
 
@@ -57,21 +56,17 @@ namespace orien_ekf
         std_msgs::msg::Header imu_header_;
 
     private:
-        VectorXd quaternion_ = VectorXd::Zero(4, 0);
-        VectorXd quaternion_pred_ = VectorXd::Zero(4, 0);
-        VectorXd quaternion_correct_ = VectorXd::Zero(4, 0);
+        VectorXd quaternion_ = VectorXd::Zero(4);
+        VectorXd quaternion_pred_ = VectorXd::Zero(4);
+        VectorXd quaternion_correct_ = VectorXd::Zero(4);
         MatrixXd Cov_q_ = MatrixXd::Zero(4, 4);
         MatrixXd Cov_q_pred_ = MatrixXd::Zero(4, 4);
         MatrixXd Cov_q_correct_ = MatrixXd::Zero(4, 4);
-
-        VectorXd mocap_quaternion_ = VectorXd::Zero(4, 0);
 
         Matrix3d C_accel_ = Matrix3d::Zero();
         Matrix3d C_gyro_ = Matrix3d::Zero();
         Matrix4d C_vo_ = MatrixXd::Zero(4, 4);
 
-        int init_ = 0;
-        int init_mocap = 0;
         int init_vo = 0;
         int init_imu = 0;
 
@@ -80,7 +75,6 @@ namespace orien_ekf
 
         void vo_pose_callback(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
         void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
-        void mocap_callback(const optitrack_broadcast::msg::Mocap::SharedPtr msg);
 
         void gyro_nonlinear_predict(VectorXd &quaternion_pred, VectorXd &quaternion, Vector3d &gyro_reading, MatrixXd &Cov_q, MatrixXd &Cov_q_pred);
         void gyro_nonlinear_correct(VectorXd &quaternion_correct, VectorXd &quaternion_pred, Vector3d &accel_readings, MatrixXd &Cov_q_pred, MatrixXd &Cov_q_correct);

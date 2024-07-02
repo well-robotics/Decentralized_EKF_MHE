@@ -76,7 +76,10 @@ ament_target_dependencies(stereo-decentralized rclcpp sensor_msgs cv_bridge mess
 
 install(TARGETS mono rgbd stereo stereo-inertial stereo-decentralized 
   DESTINATION lib/${PROJECT_NAME})
-
+install(FILES config/stereo-decentralized/RealSense_D455_640_480.yaml
+  DESTINATION share/${PROJECT_NAME}/config)
+install(FILES vocabulary/ORBvoc.txt
+  DESTINATION share/${PROJECT_NAME}/vocabulary)  
 # Install launch files.
 #install(DIRECTORY launch config vocabulary
 #  DESTINATION share/${PROJECT_NAME}/)
