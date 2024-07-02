@@ -23,7 +23,12 @@ FROST is used to generate kinematics libraries for the project. To install FROST
 ## Install
 ```bash
 mkdir ~/ros2_ws
+cd ~/ros2_ws
 git clone https://github.com/well-robotics/Decentralized_EKF_MHE.git
 colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install
+```
+## Launch Example
+```bash
+ros2 launch go1_example go1_launch.py
 ```
 
