@@ -9,25 +9,25 @@ For more details, please refer to the paper. [[arxiv](http://www.arxiv.org/abs/2
 
 ## Prerequisites
 
-### Ubuntu 20.04
+#### Ubuntu 20.04
 
-### [ROS2](https://docs.ros.org/en/galactic/index.html) (tested with foxy/galactic)
+#### [ROS2](https://docs.ros.org/en/galactic/index.html) (tested with foxy/galactic)
 
-### Eigen3
+#### Eigen3
 
-### [OSQP](https://osqp.org/docs/get_started/)
+#### [OSQP](https://osqp.org/docs/get_started/)
 
-### [OpenCV 4.2.0](https://opencv.org/) 
+#### [OpenCV 4.2.0](https://opencv.org/) 
 
-### [ORB_SLAM3](https://github.com/UZ-SLAMLab/ORB_SLAM3)
+#### [ORB_SLAM3](https://github.com/UZ-SLAMLab/ORB_SLAM3)
 
 Go to this [[repo](https://github.com/zang09/ORB-SLAM3-STEREO-FIXED)] and follow build instruction. 
 
-### [ORB_SLAM3_ROS2](https://github.com/zang09/ORB_SLAM3_ROS2?tab=readme-ov-file)
+#### [ORB_SLAM3_ROS2](https://github.com/zang09/ORB_SLAM3_ROS2?tab=readme-ov-file)
 
 Go to this [[repo](https://github.com/zang09/ORB_SLAM3_ROS2?tab=readme-ov-file)] and follow build instruction. 
 
-### [FROST](https://ayonga.github.io/frost-dev/pages/installation.html)
+#### [FROST](https://ayonga.github.io/frost-dev/pages/installation.html)
 FROST is used to generate kinematics libraries for the project.
 
 ## Install
@@ -41,3 +41,4 @@ colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install
 ```bash
 ros2 launch go1_example go1_launch.py
 ```
+
