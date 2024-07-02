@@ -25,6 +25,10 @@ Go to this [[repo](https://github.com/zang09/ORB-SLAM3-STEREO-FIXED)] and follow
 
 #### [ORB_SLAM3_ROS2](https://github.com/zang09/ORB_SLAM3_ROS2?tab=readme-ov-file)
 
+Change this [line](https://github.com/well-robotics/Decentralized_EKF_MHE/blob/17b1d441f9ffeae375c198b644bcd774f7da331c/src/visual_odometry/orbslam3_ros2/CMakeLists.txt#L5) to your own ```python site-packages``` path
+
+Change this [line](https://github.com/well-robotics/Decentralized_EKF_MHE/blob/17b1d441f9ffeae375c198b644bcd774f7da331c/src/visual_odometry/orbslam3_ros2/CMakeModules/FindORB_SLAM3.cmake#L8) to your own ```ORB_SLAM3``` path
+
 Go to this [[repo](https://github.com/zang09/ORB_SLAM3_ROS2?tab=readme-ov-file)] and follow build instruction. 
 
 #### [FROST](https://ayonga.github.io/frost-dev/pages/installation.html)
