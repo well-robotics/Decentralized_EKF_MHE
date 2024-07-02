@@ -7,16 +7,15 @@ For more details, please refer to the paper. [[arxiv](http://www.arxiv.org/abs/2
 
 ## Prerequisites
 
-### ROS2 (tested with foxy/galactic)
+### [ROS2](https://docs.ros.org/en/galactic/index.html) (tested with foxy/galactic)
 
 ### Eigen3
 
-### OSQP
-```bash
-https://osqp.org/docs/get_started/
-```
+### [OSQP](https://osqp.org/docs/get_started/)
 
-### FROST
-FROST is used to generate dynamic libraries for the project. To install FROST on Windows, follow the guidelines in https://ayonga.github.io/frost-dev/pages/installation.html. Several things should be noticed: 
+### [FROST](https://ayonga.github.io/frost-dev/pages/installation.html)
+FROST is used to generate kinematics libraries for the project. To install FROST on Windows, several things should be noticed: 
 1. The version of Mathematica should be equal or lower than 12.3
 2. Remember to change the Mathematica version in mathrun.m
+
+### [ORBSLAM3](https://github.com/UZ-SLAMLab/ORB_SLAM3)
