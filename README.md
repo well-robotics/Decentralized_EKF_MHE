@@ -22,7 +22,7 @@ FROST is used to generate kinematics libraries for the project. To install FROST
 1. The version of Mathematica should be equal or lower than 12.3
 2. Remember to change the Mathematica version in mathrun.m
 
-### OpenCV 4.2.0
+### [OpenCV 4.2.0](https://opencv.org/) 
 
 ### [ORB_SLAM3](https://github.com/UZ-SLAMLab/ORB_SLAM3)
 
