@@ -42,5 +42,3 @@ colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install
 ```bash
 ros2 launch go1_example go1_launch.py
 ```
-
-## Acknowledgement
