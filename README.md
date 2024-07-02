@@ -29,7 +29,7 @@ Change this [line](https://github.com/well-robotics/Decentralized_EKF_MHE/blob/1
 
 Change this [line](https://github.com/well-robotics/Decentralized_EKF_MHE/blob/17b1d441f9ffeae375c198b644bcd774f7da331c/src/visual_odometry/orbslam3_ros2/CMakeModules/FindORB_SLAM3.cmake#L8) to your own ```ORB_SLAM3``` path
 
-Go to this [[repo](https://github.com/zang09/ORB_SLAM3_ROS2?tab=readme-ov-file)] and follow build instruction. 
+For a detailed list of available interfaces and their usage, please visit the [[repo](https://github.com/zang09/ORB_SLAM3_ROS2?tab=readme-ov-file)]. 
 
 #### [FROST](https://ayonga.github.io/frost-dev/pages/installation.html)
 FROST is used to generate kinematics libraries for the project.
