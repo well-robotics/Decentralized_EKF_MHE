@@ -6,9 +6,16 @@ Decentralized_EKF_MHE decentralizes the nonlinear estimation of the floating bas
 For more details, please refer to the paper. [[arxiv](http://www.arxiv.org/abs/2405.20567)] [[youtube](https://www.youtube.com/watch?v=k3bBO87UIlk)]
 
 ## Prerequisites
-### ROS2 (tested with foxy/galatic)
+
+### ROS2 (tested with foxy/galactic)
+
 ### Eigen3
+
 ### OSQP
 ```bash
 https://osqp.org/docs/get_started/
-###
+
+### FROST
+FROST is used to generate dynamic libraries for the project. To install FROST on Windows, follow the guidelines in https://ayonga.github.io/frost-dev/pages/installation.html. Several things should be noticed: 
+1. The version of Mathematica should be equal or lower than 12.3
+2. Remember to change the Mathematica version in mathrun.m
