@@ -1,0 +1,8 @@
+orien_sub:
+  ros__parameters: 
+    quaternion_init: [1.0, 0.0, 0.0, 0.0] # [w, x, y, z]
+    init_std: [0.001, 0.001, 0.001, 0.001]
+    process_std: [0.1, 0.1, 0.1]
+    gravity_meas_std: [4.0, 4.0, 4.0]
+    vo_meas_std: [0.0001, 0.0001, 0.0001, 0.0001]
+    rate: 500

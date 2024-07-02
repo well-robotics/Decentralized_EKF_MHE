@@ -44,6 +44,7 @@ Decentralized_EKF_MHE/
 │   │       ├── stereo-pub-node.cpp
 │   │       └── stereo-pub.cpp
 │   ├── config/
+│   │   ├── parameters.yaml
 │   │   └── stereo-decentralized/
 │   │       └── RealSense_D455_640_480.yaml
 │   ├── vocabulary/
