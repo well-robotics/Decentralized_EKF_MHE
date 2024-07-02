@@ -7,6 +7,8 @@ For more details, please refer to the paper. [[arxiv](http://www.arxiv.org/abs/2
 
 ## Prerequisites
 
+### Ubuntu 20.04
+
 ### [ROS2](https://docs.ros.org/en/galactic/index.html) (tested with foxy/galactic)
 
 ### Eigen3
@@ -18,7 +20,16 @@ FROST is used to generate kinematics libraries for the project. To install FROST
 1. The version of Mathematica should be equal or lower than 12.3
 2. Remember to change the Mathematica version in mathrun.m
 
+### OpenCV 4.2.0
+
 ### [ORBSLAM3](https://github.com/UZ-SLAMLab/ORB_SLAM3)
+
+Go to this [[repo](https://github.com/zang09/ORB-SLAM3-STEREO-FIXED)] and follow build instruction. 
+
+### [ORBSLAM3_ROS2](https://github.com/zang09/ORB_SLAM3_ROS2?tab=readme-ov-file)
+
+Go to this [[repo](https://github.com/zang09/ORB_SLAM3_ROS2?tab=readme-ov-file)] and follow build instruction. 
+
 
 ## Install
 ```bash
@@ -32,3 +43,4 @@ colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release --symlink-install
 ros2 launch go1_example go1_launch.py
 ```
 
+## Acknowledgement
