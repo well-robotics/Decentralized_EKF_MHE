@@ -30,7 +30,7 @@ namespace robotSub
     void go1Sub::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
     {
         //---------------------------------------------------------------
-        // ToDo: configurate/fill-up the imu_time, accel_b_, angular_b_;
+        // ToDo: configurate/fill-up the imu_time_, accel_b_, angular_b_;
         // robot_store_->imu_time_: double;
         // robot_store_->accel_b_: Vector3d;
         // robot_store_->angular_b_: Vector3d;
@@ -53,12 +53,12 @@ namespace robotSub
     void go1Sub::lo_callback(const sensor_msgs::msg::JointState::SharedPtr msg)
     {
         //---------------------------------------------------------------
-        // ToDo: configurate/fill-up the encoder_position, encoder_velocity, foot_forward kinematics, foot_jacobian, contact;
+        // ToDo: configurate/fill-up the encoder_position, encoder_velocity, foot_forward_kinematics, foot_jacobian, contact;
         // robot_store_->joint_states_position_: VectorXd;
         // robot_store_->joint_states_velocity_: VectorXd;
         // robot_store_->p_imu_2_foot_: MatrixXd, (3*num_legs,1);
         // robot_store_->J_imu_2_foot_: MatrixXd, (3*num_legs,3);
-        // robot_store_->contact_ = VectorXd (0: no_contact, 1: contact);
+        // robot_store_->contact_: VectorXd (num_legs) (0: no_contact, 1: contact);
         //---------------------------------------------------------------
 
         robot_store_->joint_states_position_ = Map<VectorXd, Unaligned>(const_cast<double *>(msg->position.data()), msg->position.size());

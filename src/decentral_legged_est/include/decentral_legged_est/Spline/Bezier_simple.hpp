@@ -1,3 +1,5 @@
+// Edited based on (https://github.com/chen0040/cpp-spline)
+
 #ifndef _H__Bezier_H
 #define _H__Bezier_H
 

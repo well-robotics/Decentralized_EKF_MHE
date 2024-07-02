@@ -1,4 +1,3 @@
-// EigenUtils.h
 #ifndef EIGEN_UTILS_H
 #define EIGEN_UTILS_H
 #include <Eigen/Sparse>
