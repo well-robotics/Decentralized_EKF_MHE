@@ -22,11 +22,11 @@ FROST is used to generate kinematics libraries for the project. To install FROST
 
 ### OpenCV 4.2.0
 
-### [ORBSLAM3](https://github.com/UZ-SLAMLab/ORB_SLAM3)
+### [ORB_SLAM3](https://github.com/UZ-SLAMLab/ORB_SLAM3)
 
 Go to this [[repo](https://github.com/zang09/ORB-SLAM3-STEREO-FIXED)] and follow build instruction. 
 
-### [ORBSLAM3_ROS2](https://github.com/zang09/ORB_SLAM3_ROS2?tab=readme-ov-file)
+### [ORB_SLAM3_ROS2](https://github.com/zang09/ORB_SLAM3_ROS2?tab=readme-ov-file)
 
 Go to this [[repo](https://github.com/zang09/ORB_SLAM3_ROS2?tab=readme-ov-file)] and follow build instruction. 
 
