@@ -14,6 +14,7 @@ For more details, please refer to the paper. [[arxiv](http://www.arxiv.org/abs/2
 ### OSQP
 ```bash
 https://osqp.org/docs/get_started/
+```
 
 ### FROST
 FROST is used to generate dynamic libraries for the project. To install FROST on Windows, follow the guidelines in https://ayonga.github.io/frost-dev/pages/installation.html. Several things should be noticed: 
