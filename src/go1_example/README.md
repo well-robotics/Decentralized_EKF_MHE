@@ -1,4 +1,4 @@
-# Go1_example package
+# go1_example package
 This package deploys the Decentralized MHE & EKF estimation on Unitree go1 robot. 
 ## Package structure
 Creating a subclass of the **decentral_legged_est/EstSub.hpp** and configuring callbacks to receive: *IMU*, *Encoder*, and *Kinematics* measurements;
