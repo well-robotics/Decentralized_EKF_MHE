@@ -17,11 +17,6 @@ For more details, please refer to the paper. [[arxiv](http://www.arxiv.org/abs/2
 
 ### [OSQP](https://osqp.org/docs/get_started/)
 
-### [FROST](https://ayonga.github.io/frost-dev/pages/installation.html)
-FROST is used to generate kinematics libraries for the project. To install FROST on Windows, several things should be noticed: 
-1. The version of Mathematica should be equal or lower than 12.3
-2. Remember to change the Mathematica version in mathrun.m
-
 ### [OpenCV 4.2.0](https://opencv.org/) 
 
 ### [ORB_SLAM3](https://github.com/UZ-SLAMLab/ORB_SLAM3)
@@ -32,6 +27,8 @@ Go to this [[repo](https://github.com/zang09/ORB-SLAM3-STEREO-FIXED)] and follow
 
 Go to this [[repo](https://github.com/zang09/ORB_SLAM3_ROS2?tab=readme-ov-file)] and follow build instruction. 
 
+### [FROST](https://ayonga.github.io/frost-dev/pages/installation.html)
+FROST is used to generate kinematics libraries for the project.
 
 ## Install
 ```bash
